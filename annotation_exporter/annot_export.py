@@ -206,7 +206,7 @@ class AnnotationExporter:
 
         csv_str = "".join(csv_list)
 
-        with open("Datasets.csv", "w", encoding="utf-8") as f:
+        with open(f"{self.output_folder}/Datasets.csv", "w", encoding="utf-8") as f:
             f.write(csv_str)
 
     def add_page_cell(self, cell):
