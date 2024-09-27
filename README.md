@@ -17,6 +17,7 @@ The purpose of this repo is to provide access to the code showcased in the previ
 - PyPDF2
 
 ### How to use 
+All Paths need to be absolute Paths.
 1. Download the Project
 2. Create a [Virtual environment](https://stackoverflow.com/questions/43069780/how-to-create-virtual-env-with-python3)
 3. Install all required packages 
@@ -31,7 +32,7 @@ The outputs should be in the specified folder.
 
 1. Make sure all packages are installed correctly
 2. Replace all backslashes in the Paths with normal (forward) slashes "/"
-3. Try using absolute Paths (for example C:/users/.../project/PDF/example_compressed)
+3. Make sure you using absolute Paths (for example C:/users/.../project/PDF/example_compressed)
 
 You can also always open an issue and I will try to help you.
 
@@ -43,17 +44,3 @@ This project is licensed under the MIT License
 
 ## Credits
 The project was created by Salomo Sparna.
-
-
-## Links für Salomo
-
-- [Projektordnerstruktur](https://realpython.com/python-application-layouts/#command-line-application-layouts)
-- [Beispiel README.md](https://github.com/jsahlmann/R4SportMed)
-- [Tipps für READMEs](https://dev.to/quira/5-pro-tips-for-an-unbeatable-readme-143i)
-- [Markdown-Syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-Syntax)
-- [Dokumentation der Programme](https://realpython.com/documenting-python-code/)
-- [Struktogramme](http://www.pellatz.de/downloads/Struktogramme.pdf)
-
-## Mögliche ToDos
-
-- Programme dokumentieren 
