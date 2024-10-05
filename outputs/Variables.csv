@@ -28,9 +28,12 @@ RPORRES(onerowforeachoptionchecked)#None#RP#3
 QVAL#None#SUPPDM#3
 QNAM#None#SUPPDM#3
 QLabel#None#SUPPDM#3
-VSORRESU,VSSTRESU#None#VS#3
-VSORRESU,VSSTRESU#None#VS#3
+VSSTRESU#None#VS#3
+VSORRESU#None#VS#3
+VSSTRESU#None#VS#3
+VSORRESU#None#VS#3
 QVAL#None#SUPPRP#3
 QNAM#None#SUPPRP#3
 QLabel#None#SUPPRP#3
-(ifmorethan1raceselected,RACE#None#None#3
+RACE#None#None#3
+(ifmorethan1raceselected#None#None#3

@@ -29,6 +29,7 @@ class AnnotationExporter:
         self.ws_variables: Worksheet
         self.current_page: Page
         self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLabel"]
+        self.separators: list[str] = [",", ";", "|"] #expand as needed
 
     def temp(self):
         wb = pyxl.load_workbook("C:/Important Data/pdf_proj_github/Templates/temp.xlsx")
@@ -98,17 +99,32 @@ class AnnotationExporter:
                     content: str = annot_obj["/Contents"]
                     content = "".join(content.split()) # remove spaces
                     split_annot = content.split("=", 1)
+                    split_content: list[str]
                     if len(split_annot[0]) == 2:
                         dataset = True
                         self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
+                        split_content = [split_annot[0]]
                     elif split_annot[0][:4] == "SUPP":
                         supp = True
+                        split_content = [split_annot[0]]
+                    else:
+                        split_set = set()
+                        for separator in self.separators:
+                            for string in split_annot[0].split(separator):
+                                if any(ext in string for ext in self.separators):# if any separator is in the string don't add it
+                                    continue
+                                split_set.add(string)
 
-                    annot_data.append(
-                        {"dataset_name": split_annot[0],
-                         "dataset": dataset, 
-                         "supp": supp,
-                         "annot_obj": annot_obj})
+                        split_content = list(split_set)
+                        if len(split_content) > 1:
+                            print(split_content)
+
+                    for string in split_content:
+                        annot_data.append(
+                            {"dataset_name": string,
+                            "dataset": dataset, 
+                            "supp": supp,
+                            "annot_obj": annot_obj})
 
                 self.add_to_workbook(annot_data)
 
@@ -213,7 +229,7 @@ class AnnotationExporter:
                         self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].fill = self.green_cell_fill
                         self.ws_variables[f"L{y_coordinate}"].value = "CRF"
                         self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
-                
+
                 if found_variable: 
                     continue
 
