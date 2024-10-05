@@ -7,7 +7,7 @@ class Page:
     def get_page_nr(self):
         """simple getter for page number"""
         return self.page_nr
-    
+
     def get_datasets(self):
         """simple getter for datasets"""
         return self.datasets

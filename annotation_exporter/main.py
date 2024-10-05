@@ -1,6 +1,6 @@
 """This is the main file for the annotation export project. It allows the user to export annotations
 from a pdf to an excel file. For further information on how to use this please consult the README.md"""
-import PySimpleGUI as sg
+import PySimpleGUI as sg 
 from annot_export import AnnotationExporter
 
 
@@ -8,9 +8,9 @@ annotation_exporter: AnnotationExporter = AnnotationExporter()
 sg.theme("DarkGrey5")
 layout = [
     [sg.Text("Annotation Exporter V 0.2")],
-    [sg.Push(), sg.Text("PDF path"), sg.InputText(key="pdf",default_text=r"C:/Important Data/PDF_proj build 0.3/PDF/example_compressed")],
-    [sg.Push(), sg.Text("spreadsheet path"), sg.InputText(key="xlsx", default_text=r"C:/Important Data/PDF_proj build 0.3/Templates/SDTM_Specification_Template.xlsx")],
-    [sg.Push(), sg.Text("output folder"), sg.InputText(key="output", default_text=r"C:/Important Data/PDF_proj build 0.3")],
+    [sg.Push(), sg.Text("PDF path"), sg.InputText(key="pdf",default_text=r"C:/Important Data/pdf_proj_github/PDF/example_compressed")],
+    [sg.Push(), sg.Text("spreadsheet path"), sg.InputText(key="xlsx", default_text=r"C:/Important Data/pdf_proj_github/Templates/temp")],
+    [sg.Push(), sg.Text("output folder"), sg.InputText(key="output", default_text=r"C:/Important Data/pdf_proj_github/outputs")],
     [sg.Push(), sg.Button("Export Annotations", key="export")]
     ]
 
@@ -57,7 +57,6 @@ while True:
             pdf_path = f"{pdf_p}.pdf"
 
         output_folder = output_p
-
 
     annotation_exporter.export_annotations(xlsx_path, pdf_path, output_folder)
 

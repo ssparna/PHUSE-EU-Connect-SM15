@@ -4,16 +4,21 @@ import logging as lg
 import PyPDF2
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.styles import PatternFill
 from Page import Page
 
 
 class AnnotationExporter:
     """Responsible for exporting annotations from a pdf to an excel file"""
     def __init__(self) -> None:
-        self.green_cell_fill = pyxl.styles.PatternFill(
+        self.green_cell_fill = PatternFill(
             start_color = "FF00FF00",
             end_color = "FF00FF00",
             fill_type = "solid")
+        self.reset_cell_fill = PatternFill(
+            fill_type=None,
+            start_color="FFFFFFFF",
+            end_color="FF000000")
         self.wb: pyxl.Workbook
         self.pages: list[Page]
         self.reader: PyPDF2.PdfReader
@@ -23,6 +28,11 @@ class AnnotationExporter:
         self.ws_datasets: Worksheet
         self.ws_variables: Worksheet
         self.current_page: Page
+        self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLabel"]
+
+    def temp(self):
+        wb = pyxl.load_workbook("C:/Important Data/pdf_proj_github/Templates/temp.xlsx")
+        wb.save("C:/Important Data/pdf_proj_github/outputs/temp.xlsx")
 
     def verify_exporter_cols(self) -> None:
         """checks that exporter cols are indeed found and exits if not"""
@@ -77,6 +87,7 @@ class AnnotationExporter:
                 annot_data: list[dict] = []
                 for annot in page["/Annots"]:
                     dataset = False
+                    supp = False
                     annot_obj = annot.get_object()
                     lg.debug(annot_obj)
 
@@ -84,16 +95,19 @@ class AnnotationExporter:
                         lg.info("unsupported annotation: %s", annot_obj)
                         continue
 
-                    content = annot_obj["/Contents"]
+                    content: str = annot_obj["/Contents"]
                     content = "".join(content.split()) # remove spaces
                     split_annot = content.split("=", 1)
                     if len(split_annot[0]) == 2:
                         dataset = True
                         self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
+                    elif split_annot[0][:4] == "SUPP":
+                        supp = True
 
                     annot_data.append(
-                        {"dataset_name": split_annot[0], 
+                        {"dataset_name": split_annot[0],
                          "dataset": dataset, 
+                         "supp": supp,
                          "annot_obj": annot_obj})
 
                 self.add_to_workbook(annot_data)
@@ -113,23 +127,55 @@ class AnnotationExporter:
 
     def enter_dataset(self, dataset_name: str, annot_obj: dict) -> None:
         """adds a dataset to the workbook"""
-        for cell in self.ws_datasets["A"]:
+        for cell in self.ws_datasets.iter_rows(max_col=1):
+            cell = cell[0]
             if cell.value == dataset_name:
+                #print(cell.value, dataset_name)
                 y_coordinate = cell.coordinate.split("A", 1)[1]
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"] = "Present"
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"].fill = self.green_cell_fill
                 lg.debug("%s was assigned as a dataset with the color %s", dataset_name, annot_obj["/C"])
-                break
+                return
 
-            if cell.value is None: # dataset not in template
-                cell.value = dataset_name
-                cell.fill = self.green_cell_fill
-                y_coordinate = cell.coordinate.split("A", 1)[1]
-                dataset_long_name: str = annot_obj["/Contents"].split("=")[1].strip()
-                self.ws_datasets[f"B{y_coordinate}"] = dataset_long_name
-                self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"] = "Present"
-                self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"].fill = self.green_cell_fill
+        #print("not present in template")
+        print(self.ws_datasets.max_row)
+        self.ws_datasets.append({
+            "A": dataset_name,
+            self.exporter_col_ds: "Present",
+        })
+        self.ws_datasets[self.exporter_col_ds][self.ws_datasets.max_row - 1].fill = self.green_cell_fill
+        self.ws_datasets["A"][self.ws_datasets.max_row - 1].fill = self.reset_cell_fill
+
+    def enter_supp(self, annot: dict) -> None:
+        """adds supp dataset to datasets and the three supp variables to variables"""
+
+        self.enter_dataset(annot["dataset_name"][:6], annot["annot_obj"])
+
+        modified_cols: list[str] = ["B", "C", "L", "F"]
+
+        all_values = [x[0] for x in self.ws_variables.iter_rows(min_col=2, max_col=2, values_only=True)] # very performance inefficient
+        
+        if annot["dataset_name"][:6] in all_values:
+            for cell in self.ws_variables["B"]:
+                if cell.value != annot["dataset_name"][:6]:
+                    continue
+                self.add_page_cell(self.ws_variables[f"M{cell.row}"])
                 break
+        else:
+            for var_name in self.supp_var_names:
+                self.ws_variables.append({
+                    "B": annot["dataset_name"][:6],
+                    "C": var_name,
+                    "L": "CRF",
+                    "F": "200",
+                    self.exporter_col_var: "Present"})
+                
+                self.add_page_cell(self.ws_variables[f"M{self.ws_variables.max_row}"])
+                self.ws_variables[self.exporter_col_var][self.ws_variables.max_row - 1].fill = self.green_cell_fill
+
+                for col in modified_cols:
+                    self.ws_variables[col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
+            
 
     def match_dataset_to_variable(self, annot_obj: dict) -> str:
         """matches a dataset to a variable based on color"""
@@ -147,16 +193,19 @@ class AnnotationExporter:
         for annot in data:
             if annot["dataset"]:
                 self.enter_dataset(annot["dataset_name"], annot["annot_obj"])
+            elif annot["supp"]:
+                self.enter_supp(annot)
             else:
                 variable_dataset = self.match_dataset_to_variable(annot["annot_obj"])
                 variable_name = annot["annot_obj"]["/Contents"].split("=")[0].strip()
+                found_variable = False
 
                 for cell in self.ws_variables["B"]:
                     y_coordinate = cell.coordinate.split("B", 1)[1]
 
                     if cell.value == variable_dataset and self.ws_variables["C" + y_coordinate].value == variable_name:
+                        found_variable = True
                         if self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value == "Present":
-                            print("yay", y_coordinate)
                             self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
                             break
 
@@ -164,18 +213,21 @@ class AnnotationExporter:
                         self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].fill = self.green_cell_fill
                         self.ws_variables[f"L{y_coordinate}"].value = "CRF"
                         self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
-                        break
+                
+                if found_variable: 
+                    continue
 
-                    if cell.value is None:
-                        cell.value = variable_dataset
-                        self.ws_variables[f"C{y_coordinate}"].value = annot["dataset_name"]
-                        self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value = "Present"
-                        self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
-                        self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].fill = self.green_cell_fill
-                        self.ws_variables[f"L{y_coordinate}"].value = "CRF"
-                        self.ws_variables[f"F{y_coordinate}"].value = "200"
-                        break
-
+                self.ws_variables.append({
+                    "B": variable_dataset,
+                    "C": annot["dataset_name"],
+                    "L": "CRF",
+                    "F": "200",
+                    self.exporter_col_var: "Present"
+                })
+                self.add_page_cell(self.ws_variables[f"M{self.ws_variables.max_row}"])
+                self.ws_variables[self.exporter_col_var][self.ws_variables.max_row - 1].fill = self.green_cell_fill
+                for modified_col in ["B", "C", "L", "F"]:
+                    self.ws_variables[modified_col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
 
     def generate_variable_csv(self) -> None:
         """generates the csv for the variables"""
@@ -218,3 +270,4 @@ class AnnotationExporter:
         else:
             new_value = f"{cell.value} {self.current_page.get_page_nr() + 1}"
         cell.value = new_value
+        cell.fill = self.reset_cell_fill
