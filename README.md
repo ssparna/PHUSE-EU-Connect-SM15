@@ -15,12 +15,22 @@ The purpose of this repo is to provide access to the code showcased in the previ
 - Python 3.6 or later
 - openpyxl
 - PyPDF2
+- FreeSimpleGUI
 
 ### How to use 
 All Paths need to be absolute Paths.
 1. Download the Project
-2. Create a [Virtual environment](https://stackoverflow.com/questions/43069780/how-to-create-virtual-env-with-python3)
+2. Create a Virtual environment
+    ```{batch}
+    path\to\project python -m venv venv
+    path\to\project venv\Scripts\activate
+    ...
+    path\to\project venv\Scripts\deactivate
+    ```
 3. Install all required packages 
+    ```{python}
+    pip install -r requirements.txt
+    ```
 4. Run project/annotation_exporter/main.py
 5. Enter paths for PDF and Template inputs
 6. Enter output folder

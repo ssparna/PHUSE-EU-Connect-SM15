@@ -1,6 +1,6 @@
 """This is the main file for the annotation export project. It allows the user to export annotations
 from a pdf to an excel file. For further information on how to use this please consult the README.md"""
-import PySimpleGUI as sg 
+import FreeSimpleGUI as sg 
 from annot_export import AnnotationExporter
 
 
