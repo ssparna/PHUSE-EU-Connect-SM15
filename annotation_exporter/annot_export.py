@@ -28,7 +28,7 @@ class AnnotationExporter:
         self.ws_datasets: Worksheet
         self.ws_variables: Worksheet
         self.current_page: Page
-        self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLabel"]
+        self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLABEL"]
         self.separators: list[str] = [",", ";", "|"] #expand as needed
 
     def temp(self):
@@ -118,7 +118,14 @@ class AnnotationExporter:
                         split_set = set()
                         for separator in self.separators:
                             for string in split_annot[0].split(separator):
-                                if any(ext in string for ext in self.separators):# if any separator is in the string don't add it
+                                if any(ext in string for ext in self.separators): # if any separator is in the string don't add it
+                                    continue
+                                elif "("  in string:
+                                    string = string.split("(", 1)[0]
+                                elif ")" in string:
+                                    string = string.split(")", 1)[1]
+                                
+                                if string == "":
                                     continue
                                 split_set.add(string)
 
@@ -212,13 +219,15 @@ class AnnotationExporter:
     def add_to_workbook(self, data: list[dict]):
         """adds both datasets and variables to the workbook"""
         for annot in data:
+            if annot["dataset_name"] == "RACE":
+                print(self.current_page.datasets, annot["annot_obj"]["/C"])
             if annot["dataset"]:
                 self.enter_dataset(annot["dataset_name"], annot["annot_obj"])
             elif annot["supp"]:
                 self.enter_supp(annot)
             else:
                 variable_dataset = self.match_dataset_to_variable(annot["annot_obj"])
-                variable_name = annot["annot_obj"]["/Contents"].split("=")[0].strip()
+                variable_name = annot["dataset_name"]
                 found_variable = False
 
                 for cell in self.ws_variables["B"]:

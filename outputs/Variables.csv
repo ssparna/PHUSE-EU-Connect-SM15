@@ -25,13 +25,11 @@ SVENDTC#End Date/Time of Observation#SV#3
 DSSDTC#None#DS#2
 QVAL#None#SUPPDS#2
 QNAM#None#SUPPDS#2
-QLabel#None#SUPPDS#2
-RPORRES(onerowforeachoptionchecked)#None#RP#3
+QLABEL#None#SUPPDS#2
 QVAL#None#SUPPDM#3
 QNAM#None#SUPPDM#3
-QLabel#None#SUPPDM#3
+QLABEL#None#SUPPDM#3
 QVAL#None#SUPPRP#3
 QNAM#None#SUPPRP#3
-QLabel#None#SUPPRP#3
-(ifmorethan1raceselected#None#None#3
+QLABEL#None#SUPPRP#3
 RACE#None#None#3
