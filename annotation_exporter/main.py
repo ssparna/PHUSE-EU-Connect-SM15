@@ -8,9 +8,9 @@ annotation_exporter: AnnotationExporter = AnnotationExporter()
 sg.theme("DarkGrey5")
 layout = [
     [sg.Text("Annotation Exporter V 0.2")],
-    [sg.Push(), sg.Text("PDF path"), sg.InputText(key="pdf",default_text=r"C:/Important Data/pdf_proj_github/PDF/example_compressed")],
-    [sg.Push(), sg.Text("spreadsheet path"), sg.InputText(key="xlsx", default_text=r"C:/Important Data/pdf_proj_github/Templates/temp")],
-    [sg.Push(), sg.Text("output folder"), sg.InputText(key="output", default_text=r"C:/Important Data/pdf_proj_github/outputs")],
+    [sg.Push(), sg.Text("PDF path"), sg.InputText(key="pdf",default_text=r"PDF/aCRF 2.0_example_new")],
+    [sg.Push(), sg.Text("spreadsheet path"), sg.InputText(key="xlsx", default_text=r"Templates/temp")],
+    [sg.Push(), sg.Text("output folder"), sg.InputText(key="output", default_text=r"outputs")],
     [sg.Push(), sg.Button("Export Annotations", key="export")]
     ]
 

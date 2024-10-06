@@ -24,8 +24,6 @@ All Paths need to be absolute Paths.
     ```{batch}
     path\to\project python -m venv venv
     path\to\project venv\Scripts\activate
-    ...
-    path\to\project venv\Scripts\deactivate
     ```
 3. Install all required packages 
     ```{python}
@@ -35,6 +33,10 @@ All Paths need to be absolute Paths.
 5. Enter paths for PDF and Template inputs
 6. Enter output folder
 7. Click the Export_Annots button
+8. Deactivate venv
+    ```{batch}
+    path\to\project venv\Scripts\deactivate
+    ```
 
 The outputs should be in the specified folder.
 

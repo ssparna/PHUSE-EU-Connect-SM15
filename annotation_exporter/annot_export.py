@@ -98,8 +98,15 @@ class AnnotationExporter:
 
                     content: str = annot_obj["/Contents"]
                     content = "".join(content.split()) # remove spaces
-                    split_annot = content.split("=", 1)
                     split_content: list[str]
+                    if "(" in content:
+                        split_annot = content.split("(", )
+                        if len(split_annot[0]) == 2:
+                            dataset = True
+                            self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
+                    
+                    
+                    split_annot = content.split("=", 1)
                     if len(split_annot[0]) == 2:
                         dataset = True
                         self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
@@ -116,8 +123,6 @@ class AnnotationExporter:
                                 split_set.add(string)
 
                         split_content = list(split_set)
-                        if len(split_content) > 1:
-                            print(split_content)
 
                     for string in split_content:
                         annot_data.append(

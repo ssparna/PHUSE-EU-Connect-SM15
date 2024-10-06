@@ -6,6 +6,8 @@ RPTEST#Name of Reproductive Test#RP#3
 RPORRES#Result or Finding in Original Units#RP#3
 VSTEST#Vital Signs Test Name#VS#3
 VSORRES#Result or Finding in Original Units#VS#3
+VSORRESU#Original Units#VS#3
+VSSTRESU#Standard Units#VS#3
 SUBJID#Subject Identifier for the Study#DM#2
 RFICDTC#Date/Time of Informed Consent#DM#2
 SITEID#Study Site Identifier#DM#2
@@ -28,12 +30,8 @@ RPORRES(onerowforeachoptionchecked)#None#RP#3
 QVAL#None#SUPPDM#3
 QNAM#None#SUPPDM#3
 QLabel#None#SUPPDM#3
-VSSTRESU#None#VS#3
-VSORRESU#None#VS#3
-VSSTRESU#None#VS#3
-VSORRESU#None#VS#3
 QVAL#None#SUPPRP#3
 QNAM#None#SUPPRP#3
 QLabel#None#SUPPRP#3
-RACE#None#None#3
 (ifmorethan1raceselected#None#None#3
+RACE#None#None#3
