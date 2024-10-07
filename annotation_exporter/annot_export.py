@@ -5,12 +5,16 @@ import PyPDF2
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
-from Page import Page
+from page import Page
 
 
 class AnnotationExporter:
     """Responsible for exporting annotations from a pdf to an excel file"""
     def __init__(self) -> None:
+        """
+        Simple Constructor
+
+        """
         self.green_cell_fill = PatternFill(
             start_color = "FF00FF00",
             end_color = "FF00FF00",
@@ -29,14 +33,18 @@ class AnnotationExporter:
         self.ws_variables: Worksheet
         self.current_page: Page
         self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLABEL"]
-        self.separators: list[str] = [",", ";", "|"] #expand as needed
-
-    def temp(self):
-        wb = pyxl.load_workbook("C:/Important Data/pdf_proj_github/Templates/temp.xlsx")
-        wb.save("C:/Important Data/pdf_proj_github/outputs/temp.xlsx")
+        self.separators: list[str] = [",", ";", "|"]  #expand as needed
+        lg.basicConfig(
+            filename=f"{os.path.dirname(__file__)}/Annotation_Exporter.log",
+            encoding="utf-8",
+            level=lg.DEBUG,
+            filemode="w")
 
     def verify_exporter_cols(self) -> None:
-        """checks that exporter cols are indeed found and exits if not"""
+        """
+        checks that exporter cols are indeed found and exits if not
+
+        """
         if self.exporter_col_ds is None:
             lg.critical("no free column for sheet Datasets found, exiting...")
             exit()
@@ -48,21 +56,35 @@ class AnnotationExporter:
         lg.debug("(%s) determined as exporter_col_var", self.exporter_col_var)
 
     def determine_exporter_col(self, sheet: str) -> str | None:
-        """determines the exporter cols. Returns the exel column index of the free column or None"""
+        """
+        determines the exporter cols. Returns the exel column index of the free column or None
+        :param sheet: name of the sheet
+        :type sheet: str
+
+        :return: the exel column index of the free column or None
+        :rtype: str | None
+
+        """
         for cell in self.wb[sheet]["1"]:
             if cell.value is None:
                 cell.value = "Present in aCRF"
-                return "".join([i for i in cell.coordinate if not i.isdigit()]) # remove all digits
+                return "".join([i for i in cell.coordinate if not i.isdigit()])  # remove all digits
 
         lg.error("no free column for sheet %s found!", sheet)
 
     def export_annotations(self, template_path: str, pdf_path: str, output_folder: str):
-        """Exports annots, this is the main function that should be called"""
-        lg.basicConfig(
-            filename=f"{os.path.dirname(__file__)}/Annotation_Exporter.log",
-            encoding="utf-8",
-            level=lg.DEBUG,
-            filemode="w")
+        """
+        Exports annots, this is the main function that should be called. 
+        Expects the paths to have the correct endings.
+
+        :param template_path: path to the template file
+        :type template_path: str
+        :param pdf_path: path to the pdf file
+        :type pdf_path: str
+        :param output_folder: path to the output folder
+        :type output_folder: str
+
+        """
         print("exporting annotations...")
         lg.debug("export annots")
         self.wb = pyxl.load_workbook(template_path)
@@ -84,7 +106,10 @@ class AnnotationExporter:
             self.pages.append(self.current_page)
             lg.info("starting on page: %s", self.current_page.get_page_nr())
 
-            if "/Annots" in page:
+            if "/Annots" not in page:
+                lg.info("Page %s has no Annotations, continuing with next page...", self.current_page.get_page_nr())
+                continue
+            else:
                 annot_data: list[dict] = []
                 for annot in page["/Annots"]:
                     dataset = False
@@ -103,13 +128,12 @@ class AnnotationExporter:
                         split_annot = content.split("(", )
                         if len(split_annot[0]) == 2:
                             dataset = True
-                            self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
-                    
-                    
+                            self.current_page.add_datasets([split_annot[0], annot_obj["/C"]])
+ 
                     split_annot = content.split("=", 1)
                     if len(split_annot[0]) == 2:
                         dataset = True
-                        self.current_page.add_datasets([split_annot[0],annot_obj["/C"]])
+                        self.current_page.add_datasets([split_annot[0], annot_obj["/C"]])
                         split_content = [split_annot[0]]
                     elif split_annot[0][:4] == "SUPP":
                         supp = True
@@ -124,7 +148,7 @@ class AnnotationExporter:
                                     string = string.split("(", 1)[0]
                                 elif ")" in string:
                                     string = string.split(")", 1)[1]
-                                
+
                                 if string == "":
                                     continue
                                 split_set.add(string)
@@ -142,8 +166,7 @@ class AnnotationExporter:
 
                 lg.debug(self.current_page.get_datasets())
                 lg.info("Page %s done!", self.current_page.get_page_nr())
-            else:
-                lg.info("Page %s has no Annotations, continuing with next page...", self.current_page.get_page_nr())
+
 
         self.wb.save(f"{output_folder}/output.xlsx")
         print("generating csv...")
@@ -154,19 +177,24 @@ class AnnotationExporter:
         lg.debug("exported annots")
 
     def enter_dataset(self, dataset_name: str, annot_obj: dict) -> None:
-        """adds a dataset to the workbook"""
+        """
+        adds a dataset to the workbook
+
+        :param dataset_name: name of the dataset
+        :type dataset_name: str
+        :param annot_obj: annotation object
+        :type annot_obj: dict
+
+        """
         for cell in self.ws_datasets.iter_rows(max_col=1):
             cell = cell[0]
             if cell.value == dataset_name:
-                #print(cell.value, dataset_name)
                 y_coordinate = cell.coordinate.split("A", 1)[1]
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"] = "Present"
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"].fill = self.green_cell_fill
                 lg.debug("%s was assigned as a dataset with the color %s", dataset_name, annot_obj["/C"])
                 return
 
-        #print("not present in template")
-        print(self.ws_datasets.max_row)
         self.ws_datasets.append({
             "A": dataset_name,
             self.exporter_col_ds: "Present",
@@ -175,14 +203,19 @@ class AnnotationExporter:
         self.ws_datasets["A"][self.ws_datasets.max_row - 1].fill = self.reset_cell_fill
 
     def enter_supp(self, annot: dict) -> None:
-        """adds supp dataset to datasets and the three supp variables to variables"""
+        """
+        adds supp dataset to datasets and the three supp variables to variables
 
+        :param annot: annotation object
+        :type annot: dict
+
+        """
         self.enter_dataset(annot["dataset_name"][:6], annot["annot_obj"])
 
         modified_cols: list[str] = ["B", "C", "L", "F"]
 
         all_values = [x[0] for x in self.ws_variables.iter_rows(min_col=2, max_col=2, values_only=True)] # very performance inefficient
-        
+
         if annot["dataset_name"][:6] in all_values:
             for cell in self.ws_variables["B"]:
                 if cell.value != annot["dataset_name"][:6]:
@@ -197,16 +230,23 @@ class AnnotationExporter:
                     "L": "CRF",
                     "F": "200",
                     self.exporter_col_var: "Present"})
-                
+
                 self.add_page_cell(self.ws_variables[f"M{self.ws_variables.max_row}"])
                 self.ws_variables[self.exporter_col_var][self.ws_variables.max_row - 1].fill = self.green_cell_fill
 
                 for col in modified_cols:
                     self.ws_variables[col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
-            
 
     def match_dataset_to_variable(self, annot_obj: dict) -> str:
-        """matches a dataset to a variable based on color"""
+        """
+        matches a dataset to a variable based on color
+
+        :param annot_obj: annotation object
+        :type annot_obj: dict
+
+        :return: name of the dataset
+        :rtype: str
+        """
         for combination in self.current_page.get_datasets():
             if combination[1] == annot_obj["/C"]: # match color
                 lg.debug(
@@ -217,10 +257,14 @@ class AnnotationExporter:
         lg.error("no dataset was matched to variable! %s", annot_obj)
 
     def add_to_workbook(self, data: list[dict]):
-        """adds both datasets and variables to the workbook"""
+        """
+        adds both datasets and variables to the workbook
+        
+        :param data: list of annotations
+        :type data: list[dict]
+
+        """
         for annot in data:
-            if annot["dataset_name"] == "RACE":
-                print(self.current_page.datasets, annot["annot_obj"]["/C"])
             if annot["dataset"]:
                 self.enter_dataset(annot["dataset_name"], annot["annot_obj"])
             elif annot["supp"]:
@@ -260,7 +304,10 @@ class AnnotationExporter:
                     self.ws_variables[modified_col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
 
     def generate_variable_csv(self) -> None:
-        """generates the csv for the variables"""
+        """
+        generates the csv for the variables
+
+        """
         csv_list = ["Variable Name#Variable Label#Dataset Name#Page(s)\n"] # start with first line
         for cell in self.ws_variables[self.exporter_col_var]:
             if cell.value == "Present":
@@ -277,7 +324,10 @@ class AnnotationExporter:
             f.write(csv_str)
 
     def generate_dataset_csv(self):
-        """generates the csv for the datasets"""
+        """
+        generates the csv for the datasets
+
+        """
         csv_list: list[str] = ["Dataset Name#Color\n"] # start with first line
         for page in self.pages:
             for dataset in page.get_datasets():
@@ -292,7 +342,13 @@ class AnnotationExporter:
             f.write(csv_str)
 
     def add_page_cell(self, cell):
-        """adds the current page number to the cell"""
+        """
+        adds the current page number to the cell
+
+        :param cell: The cell in which to add the current page number
+        :type cell: openpyxl.cell.cell.Cell
+        
+        """
         if not cell.value:
             new_value = f"{self.current_page.get_page_nr() + 1}"
         elif str(self.current_page.get_page_nr() + 1) in cell.value:
