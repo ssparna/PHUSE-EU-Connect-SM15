@@ -129,7 +129,7 @@ class AnnotationExporter:
                         if len(split_annot[0]) == 2:
                             dataset = True
                             self.current_page.add_datasets([split_annot[0], annot_obj["/C"]])
- 
+
                     split_annot = content.split("=", 1)
                     if len(split_annot[0]) == 2:
                         dataset = True
