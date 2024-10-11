@@ -34,6 +34,7 @@ class AnnotationExporter:
         self.current_page: Page
         self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLABEL"]
         self.separators: list[str] = [",", ";", "|"]  #expand as needed
+        self.ds_replace_annots: list[dict] = []
         lg.basicConfig(
             filename=f"{os.path.dirname(__file__)}/Annotation_Exporter.log",
             encoding="utf-8",
@@ -72,7 +73,7 @@ class AnnotationExporter:
 
         lg.error("no free column for sheet %s found!", sheet)
 
-    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str):
+    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str, convert_old: bool = False) -> None:
         """
         Exports annots, this is the main function that should be called. 
         Expects the paths to have the correct endings.
@@ -83,6 +84,8 @@ class AnnotationExporter:
         :type pdf_path: str
         :param output_folder: path to the output folder
         :type output_folder: str
+        :param convert_old: if the old standard should be converted, defaults to False
+        :type convert_old: bool, optional
 
         """
         print("exporting annotations...")
@@ -131,14 +134,14 @@ class AnnotationExporter:
                             self.current_page.add_datasets([split_annot[0], annot_obj["/C"]])
 
                     split_annot = content.split("=", 1)
-                    if len(split_annot[0]) == 2:
+                    if len(split_annot[0]) == 2: # normal dataset
                         dataset = True
                         self.current_page.add_datasets([split_annot[0], annot_obj["/C"]])
                         split_content = [split_annot[0]]
-                    elif split_annot[0][:4] == "SUPP":
+                    elif split_annot[0][:4] == "SUPP": # SUPP dataset
                         supp = True
                         split_content = [split_annot[0]]
-                    else:
+                    else: # variable
                         split_set = set()
                         for separator in self.separators:
                             for string in split_annot[0].split(separator):
