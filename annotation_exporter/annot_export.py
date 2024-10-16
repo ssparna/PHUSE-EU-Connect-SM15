@@ -2,6 +2,8 @@
 import os
 import logging as lg
 import PyPDF2
+from PyPDF2.generic import DictionaryObject, AnnotationBuilder, NameObject, TextStringObject
+import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
@@ -176,8 +178,47 @@ class AnnotationExporter:
         lg.debug("generating csv of export")
         self.generate_variable_csv()
         self.generate_dataset_csv()
+
+        if convert_old:
+            self.convert_old_standard(pdf_path, output_folder)
+
         print("complete!")
         lg.debug("exported annots")
+
+    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
+        """
+        converts the old standard to the new standard
+        """
+        writer = PyPDF2.PdfWriter()
+        reader = PyPDF2.PdfReader(pdf_path)
+        new_pdf_path: str = f"{output_folder}/output.pdf"
+
+        writer.append_pages_from_reader(reader)
+
+        for page in reader.pages:
+            if "/Annots" not in page:
+                continue
+            for annot in page["/Annots"]:
+                annot: DictionaryObject = annot.get_object()
+                if annot["/Subtype"] != "/FreeText" or "/Contents" not in annot or "/C" not in annot:
+                    continue
+                content = "".join(annot["/Contents"].split())
+                split_annot = content.split("=", 1)
+
+                if len(split_annot[0]) != 2:
+                    continue
+
+                print(annot)
+                new_annot = AnnotationBuilder.free_text(
+                    f"{split_annot[0]} ({split_annot[1]})",
+                    rect=annot["/Rect"],
+                )
+                new_annot[NameObject("/C")] = annot["/C"]
+                print(new_annot)
+                writer.add_annotation(reader.get_page_number(page), new_annot)
+
+        with open(new_pdf_path, "wb") as fp:
+            writer.write(fp)
 
     def enter_dataset(self, dataset_name: str, annot_obj: dict) -> None:
         """

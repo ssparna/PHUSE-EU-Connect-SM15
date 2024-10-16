@@ -8,7 +8,7 @@ annotation_exporter: AnnotationExporter = AnnotationExporter()
 sg.theme("DarkGrey5")
 layout = [
     [sg.Text("Annotation Exporter V 0.2")],
-    [sg.Push(), sg.Text("PDF Path"), sg.InputText(key="pdf",default_text=r"PDF/aCRF 2.0_example_new"), sg.FileBrowse(file_types=(("PDF", "*.pdf"),))],
+    [sg.Push(), sg.Text("PDF Path"), sg.InputText(key="pdf",default_text=r"PDF/example_compressed"), sg.FileBrowse(file_types=(("PDF", "*.pdf"),))],
     [sg.Push(), sg.Text("Spreadsheet Path"), sg.InputText(key="xlsx", default_text=r"Templates/temp"), sg.FileBrowse(file_types=(("Excel", "*.xlsx"),))],
     [sg.Push(), sg.Text("Output Folder"), sg.InputText(key="output", default_text=r"outputs"), sg.FolderBrowse()],
     [sg.Checkbox("Convert Old Standard", key="conv_old"), sg.Push(), sg.Button("Export Annotations", key="export")]
@@ -58,6 +58,8 @@ while True:
             pdf_path = f"{pdf_p}.pdf"
 
         output_folder = output_p
+    else: 
+        continue
 
     annotation_exporter.export_annotations(xlsx_path, pdf_path, output_folder, convert_old=convert_old)
 
