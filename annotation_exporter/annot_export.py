@@ -2,7 +2,7 @@
 import os
 import logging as lg
 import PyPDF2
-from PyPDF2.generic import DictionaryObject, AnnotationBuilder, NameObject, TextStringObject
+from PyPDF2.generic import DictionaryObject, AnnotationBuilder, NameObject
 import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
