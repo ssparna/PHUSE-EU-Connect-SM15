@@ -22,10 +22,11 @@ class Annotation:
         self.annot_obj = annot_obj
         self.page: Page = page
         self.dataset: bool = False
+        self.new_datset: bool = False
         self.supp: bool = False
         self.separators: tuple[str] = separators
         self.dataset_name: str
-        self.assigned_dataset: str
+        self.assigned_dataset: str = None
         self.variable_name: str
 
         try:
@@ -43,6 +44,22 @@ class Annotation:
         self.dataset = self.is_dataset()
         self.supp = self.is_supp()
 
+        self.truncate_exess_text()
+
+    def truncate_exess_text(self) -> None:
+        """
+        truncates the annotation if it contains invalid text
+        """
+        if self.dataset or self.supp: 
+            return
+        
+        for separator in separators:
+            if separator not in self.content:
+                continue
+
+            self.content = self.content.split(separator, 1)[0]
+        
+
     @staticmethod
     def get_multiple_variables(annot_obj: DictionaryObject) -> list[dict | DictionaryObject]:
         """
@@ -54,12 +71,10 @@ class Annotation:
         except KeyError:
             lg.info("Unsupported Annotation: %s", annot_obj)
             return []
-
         content = "".join(content.split())
-        split_annot = content.split("=", 1)
-
+        
         for separator in separators:
-            for string in split_annot[0].split(separator):
+            for string in content.split(separator):
                 if any(ext in string for ext in separators): # if any separator is in the string don't add it
                     continue
                 elif "("  in string:
@@ -73,16 +88,18 @@ class Annotation:
 
         split_content = list(split_set)
         if len(split_content) == 1:
+            #annot_obj[NameObject("/Contents")] = NameObject(string) # truncating variable to exclude exess text
             return [annot_obj]
         else:
             #print(f"""\n\n\nmultiple variables: {[{"/Contents": f"{string} =", "/C": annot_obj["/C"], "/Subtype": annot_obj["/Subtype"], "/Rect": annot_obj["/Rect"]} for string in split_content]}\n\n\n""")
-            return [{"/Contents": f"{string} =", "/C": annot_obj["/C"], "/Subtype": annot_obj["/Subtype"], "/Rect": annot_obj["/Rect"]} for string in split_content]
+            return [{"/Contents": string, "/C": annot_obj["/C"], "/Subtype": annot_obj["/Subtype"], "/Rect": annot_obj["/Rect"]} for string in split_content]
 
     def is_dataset(self) -> bool:
         """
         returns wehther the annotation is a dataset or not
         """
         if len(self.content_without_spaces.split("(", 1)[0]) == 2: # new standard
+            self.new_datset = True
             self.dataset_name = self.content_without_spaces.split("(", 1)[0]
             self.page.add_datasets((self.dataset_name, self.color))
             return True
@@ -113,7 +130,7 @@ class Annotation:
                         self.content, combination, self.color, combination[1])
                 self.assigned_dataset = combination[0]
                 return
-        
+
         lg.error("no dataset was matched to variable! %s", self)
 
     def __str__(self) -> str:

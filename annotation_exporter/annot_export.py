@@ -132,9 +132,14 @@ class AnnotationExporter:
             for annot_dict in Annotation.get_multiple_variables(dict_obj)
             ]
 
-    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None: #TODO: switch to using the new annotation object
+    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
         """
         converts the old standard to the new standard
+
+        :param pdf_path: path to the pdf file
+        :type pdf_path: str
+        :param output_folder: path to the output folder
+        :type output_folder: str
         """
         writer = PyPDF2.PdfWriter()
         reader = PyPDF2.PdfReader(pdf_path)
@@ -143,25 +148,18 @@ class AnnotationExporter:
         writer.append_pages_from_reader(reader)
 
         for page in reader.pages:
-            if "/Annots" not in page:
-                continue
-            for annot in page["/Annots"]:
-                annot: DictionaryObject = annot.get_object()
-                if annot["/Subtype"] != "/FreeText" or "/Contents" not in annot or "/C" not in annot:
-                    continue
-                content = "".join(annot["/Contents"].split())
-                split_annot = content.split("=", 1)
+            annots: list[Annotation] = self.get_page_annotations(page)
 
-                if len(split_annot[0]) != 2:
+            for annot in annots:
+                if not annot.dataset or annot.new_datset:
                     continue
 
-                print(annot)
+                print(annot.content_without_spaces)
                 new_annot = AnnotationBuilder.free_text(
-                    f"{split_annot[0]} ({split_annot[1]})",
-                    rect=annot["/Rect"],
+                    f"{annot.dataset_name} ({annot.content_without_spaces.split("=", 1)[1]})",
+                    rect=annot.rect,
                 )
-                new_annot[NameObject("/C")] = annot["/C"]
-                print(new_annot)
+                new_annot[NameObject("/C")] = annot.color
                 writer.add_annotation(reader.get_page_number(page), new_annot)
 
         with open(new_pdf_path, "wb") as fp:
@@ -205,16 +203,16 @@ class AnnotationExporter:
 
         all_values = [x[0] for x in self.ws_variables.iter_rows(min_col=2, max_col=2, values_only=True)] # very performance inefficient
 
-        if annot["dataset_name"][:6] in all_values:
+        if annot.dataset_name in all_values:
             for cell in self.ws_variables["B"]:
-                if cell.value != annot["dataset_name"][:6]:
+                if cell.value != annot.dataset_name:
                     continue
                 self.add_page_cell(self.ws_variables[f"M{cell.row}"])
                 break
         else:
             for var_name in self.supp_var_names:
                 self.ws_variables.append({
-                    "B": annot["dataset_name"][:6],
+                    "B": annot.dataset_name,
                     "C": var_name,
                     "L": "CRF",
                     "F": "200",
@@ -243,14 +241,17 @@ class AnnotationExporter:
                 self.enter_variable(annot)
 
     def enter_variable(self, annot: Annotation) -> None:
+        """
+        adds a variable to the workbook
+        """
         annot.sort_into_datasets()
-        found_variable = False
+        if annot.assigned_dataset is None:
+            return
 
         for cell in self.ws_variables["B"]:
             y_coordinate = cell.coordinate.split("B", 1)[1]
 
             if cell.value == annot.assigned_dataset and self.ws_variables["C" + y_coordinate].value == annot.variable_name:
-                found_variable = True
                 if self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value == "Present":
                     self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
                     return
@@ -261,9 +262,10 @@ class AnnotationExporter:
                 self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
                 return
 
+        print(annot)
         self.ws_variables.append({
             "B": annot.assigned_dataset,
-            "C": annot.dataset_name,
+            "C": annot.variable_name,
             "L": "CRF",
             "F": "200",
             self.exporter_col_var: "Present"
