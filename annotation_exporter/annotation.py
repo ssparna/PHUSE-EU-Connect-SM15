@@ -23,7 +23,10 @@ class Annotation:
         self.page: Page = page
         self.dataset: bool = False
         self.supp: bool = False
-        self.separators: tuple[str] = separators 
+        self.separators: tuple[str] = separators
+        self.dataset_name: str
+        self.assigned_dataset: str
+        self.variable_name: str
 
         try:
             self.color: list[float] = annot_obj["/C"]
@@ -80,11 +83,14 @@ class Annotation:
         returns wehther the annotation is a dataset or not
         """
         if len(self.content_without_spaces.split("(", 1)[0]) == 2: # new standard
-            self.page.add_datasets(self.content_without_spaces.split("(", 1)[0], self.color)
+            self.dataset_name = self.content_without_spaces.split("(", 1)[0]
+            self.page.add_datasets((self.dataset_name, self.color))
             return True
         elif len(self.content_without_spaces.split("=", 1)[0]) == 2: # old standard
-            self.page.add_datasets(self.content_without_spaces.split("=", 1)[0], self.color)
+            self.dataset_name = self.content_without_spaces.split("=", 1)[0]
+            self.page.add_datasets((self.dataset_name, self.color))
             return True
+        self.variable_name = self.content_without_spaces.split("=", 1)[0]
         return False
 
     def is_supp(self) -> bool:
@@ -92,8 +98,23 @@ class Annotation:
         returns wehther the annotation is a supplementary variable or not
         """
         if self.content_without_spaces.split("=", 1)[0][:4] == "SUPP":
+            self.dataset_name = self.content_without_spaces.split("=", 1)[0][:6]
             return True
         return False
+
+    def sort_into_datasets(self) -> None:
+        """
+        sorts an annotation into a dataset
+        """
+        for combination in self.page.get_datasets():
+            if combination[1] == self.color: # match color
+                lg.debug(
+                        """Variable %s was assiged %s because %s is the same as %s""", 
+                        self.content, combination, self.color, combination[1])
+                self.assigned_dataset = combination[0]
+                return
+        
+        lg.error("no dataset was matched to variable! %s", self)
 
     def __str__(self) -> str:
         return f"Annotation: {self.content} on page {self.page.get_page_nr()}"

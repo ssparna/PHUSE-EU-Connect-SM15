@@ -101,8 +101,7 @@ class AnnotationExporter:
 
             annots = self.get_page_annotations(page)
 
-            if annots:
-                self.add_to_workbook(annots)
+            self.add_to_workbook(annots)
 
             lg.debug(self.current_page.get_datasets())
             lg.info("Page %s done!", self.current_page.get_page_nr())
@@ -133,7 +132,7 @@ class AnnotationExporter:
             for annot_dict in Annotation.get_multiple_variables(dict_obj)
             ]
 
-    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
+    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None: #TODO: switch to using the new annotation object
         """
         converts the old standard to the new standard
         """
@@ -168,33 +167,31 @@ class AnnotationExporter:
         with open(new_pdf_path, "wb") as fp:
             writer.write(fp)
 
-    def enter_dataset(self, dataset_name: str, annot_obj: dict) -> None:
+    def enter_dataset(self, annot: Annotation) -> None:
         """
         adds a dataset to the workbook
 
-        :param dataset_name: name of the dataset
-        :type dataset_name: str
-        :param annot_obj: annotation object
-        :type annot_obj: dict
+        :param annot: annotation object
+        :type annot: Annotation
 
         """
         for cell in self.ws_datasets.iter_rows(max_col=1):
             cell = cell[0]
-            if cell.value == dataset_name:
+            if cell.value == annot.dataset_name:
                 y_coordinate = cell.coordinate.split("A", 1)[1]
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"] = "Present"
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"].fill = self.green_cell_fill
-                lg.debug("%s was assigned as a dataset with the color %s", dataset_name, annot_obj["/C"])
+                lg.debug("%s was assigned as a dataset with the color %s", annot.dataset_name, annot.color)
                 return
 
         self.ws_datasets.append({
-            "A": dataset_name,
+            "A": annot.dataset_name,
             self.exporter_col_ds: "Present",
         })
         self.ws_datasets[self.exporter_col_ds][self.ws_datasets.max_row - 1].fill = self.green_cell_fill
         self.ws_datasets["A"][self.ws_datasets.max_row - 1].fill = self.reset_cell_fill
 
-    def enter_supp(self, annot: dict) -> None:
+    def enter_supp(self, annot: Annotation) -> None:
         """
         adds supp dataset to datasets and the three supp variables to variables
 
@@ -202,7 +199,7 @@ class AnnotationExporter:
         :type annot: dict
 
         """
-        self.enter_dataset(annot["dataset_name"][:6], annot["annot_obj"])
+        self.enter_dataset(annot)
 
         modified_cols: list[str] = ["B", "C", "L", "F"]
 
@@ -229,26 +226,7 @@ class AnnotationExporter:
                 for col in modified_cols:
                     self.ws_variables[col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
 
-    def match_dataset_to_variable(self, annot_obj: dict) -> str:
-        """
-        matches a dataset to a variable based on color
-
-        :param annot_obj: annotation object
-        :type annot_obj: dict
-
-        :return: name of the dataset
-        :rtype: str
-        """
-        for combination in self.current_page.get_datasets():
-            if combination[1] == annot_obj["/C"]: # match color
-                lg.debug(
-                        """Variable %s was assiged %s because %s is the same as %s""", 
-                        annot_obj["/Contents"], combination, annot_obj["/C"], combination[1])
-                return combination[0]
-
-        lg.error("no dataset was matched to variable! %s", annot_obj)
-
-    def add_to_workbook(self, data: list[Annotation]) -> None:
+    def add_to_workbook(self, annotations: list[Annotation]) -> None:
         """
         adds both datasets and variables to the workbook
         
@@ -256,44 +234,44 @@ class AnnotationExporter:
         :type data: list[dict]
 
         """
-        for annot in data:
-            if annot["dataset"]:
-                self.enter_dataset(annot["dataset_name"], annot["annot_obj"])
-            elif annot["supp"]:
+        for annot in annotations:
+            if annot.dataset:
+                self.enter_dataset(annot)
+            elif annot.supp:
                 self.enter_supp(annot)
             else:
-                variable_dataset = self.match_dataset_to_variable(annot["annot_obj"])
-                variable_name = annot["dataset_name"]
-                found_variable = False
+                self.enter_variable(annot)
 
-                for cell in self.ws_variables["B"]:
-                    y_coordinate = cell.coordinate.split("B", 1)[1]
+    def enter_variable(self, annot: Annotation) -> None:
+        annot.sort_into_datasets()
+        found_variable = False
 
-                    if cell.value == variable_dataset and self.ws_variables["C" + y_coordinate].value == variable_name:
-                        found_variable = True
-                        if self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value == "Present":
-                            self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
-                            break
+        for cell in self.ws_variables["B"]:
+            y_coordinate = cell.coordinate.split("B", 1)[1]
 
-                        self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value = "Present"
-                        self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].fill = self.green_cell_fill
-                        self.ws_variables[f"L{y_coordinate}"].value = "CRF"
-                        self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
+            if cell.value == annot.assigned_dataset and self.ws_variables["C" + y_coordinate].value == annot.variable_name:
+                found_variable = True
+                if self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value == "Present":
+                    self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
+                    return
 
-                if found_variable: 
-                    continue
+                self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].value = "Present"
+                self.ws_variables[f"{self.exporter_col_var}{y_coordinate}"].fill = self.green_cell_fill
+                self.ws_variables[f"L{y_coordinate}"].value = "CRF"
+                self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
+                return
 
-                self.ws_variables.append({
-                    "B": variable_dataset,
-                    "C": annot["dataset_name"],
-                    "L": "CRF",
-                    "F": "200",
-                    self.exporter_col_var: "Present"
-                })
-                self.add_page_cell(self.ws_variables[f"M{self.ws_variables.max_row}"])
-                self.ws_variables[self.exporter_col_var][self.ws_variables.max_row - 1].fill = self.green_cell_fill
-                for modified_col in ["B", "C", "L", "F"]:
-                    self.ws_variables[modified_col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
+        self.ws_variables.append({
+            "B": annot.assigned_dataset,
+            "C": annot.dataset_name,
+            "L": "CRF",
+            "F": "200",
+            self.exporter_col_var: "Present"
+        })
+        self.add_page_cell(self.ws_variables[f"M{self.ws_variables.max_row}"])
+        self.ws_variables[self.exporter_col_var][self.ws_variables.max_row - 1].fill = self.green_cell_fill
+        for modified_col in ["B", "C", "L", "F"]:
+            self.ws_variables[modified_col][self.ws_variables.max_row - 1].fill = self.reset_cell_fill
 
     def generate_variable_csv(self) -> None:
         """
