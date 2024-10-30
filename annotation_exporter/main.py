@@ -6,6 +6,21 @@ README.md
 import FreeSimpleGUI as sg
 from annot_export import AnnotationExporter
 
+
+def ending_present(string: str, ending: str):
+    """checks the presence of the correct ending"""
+    split_str = string.split(".")
+    if split_str[-1] == ending:
+        return True
+    else:
+        return False
+
+def conv_paths(path):
+    """replaces all backslashes to prevent accidental escape sequences"""
+    backslash = r"\ "
+    backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
+    path.replace(backslash, "/")
+
 if __name__ == "__main__":
 
     annotation_exporter: AnnotationExporter = AnnotationExporter()
@@ -20,19 +35,6 @@ if __name__ == "__main__":
 
     window = sg.Window(title="Annotation Export", layout=layout, margins=(150, 125))
 
-    def ending_present(string: str, ending: str):
-        """checks the presence of the correct ending"""
-        split_str = string.split(".")
-        if split_str[-1] == ending:
-            return True
-        else:
-            return False
-
-    def conv_paths(path):
-        """replaces all backslashes to prevent accidental escape sequences"""
-        backslash = r"\ "
-        backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
-        path.replace(backslash, "/")
 
 
     while True:
@@ -72,3 +74,4 @@ if __name__ == "__main__":
             convert_old=convert_old)
 
     window.close()
+

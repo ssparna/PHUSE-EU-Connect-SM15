@@ -2,14 +2,11 @@
 import os
 import logging as lg
 import PyPDF2
-from PyPDF2.generic import DictionaryObject, AnnotationBuilder, NameObject
 import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
-from page import Page
-from annotation import Annotation
-
+from generic import PDFAugmentor, Annotation, Page
 
 class AnnotationExporter:
     """Responsible for exporting annotations from a pdf to an excel file"""
@@ -99,7 +96,7 @@ class AnnotationExporter:
             self.pages.append(self.current_page)
             lg.info("starting on page: %s", self.current_page.get_page_nr())
 
-            annots = self.get_page_annotations(page)
+            annots = PDFAugmentor.get_page_annotations(page, reader, self.current_page)
 
             self.add_to_workbook(annots)
 
@@ -116,56 +113,10 @@ class AnnotationExporter:
         if convert_old:
             print("converting old...")
             lg.info("converting old")
-            self.convert_old_standard(pdf_path, output_folder)
+            PDFAugmentor.convert_old_standard(pdf_path, output_folder)
 
         print("complete!")
         lg.info("exported annots")
-
-    def get_page_annotations(self, page: PyPDF2.PageObject) -> list:
-        """
-        returns all annotations on the page
-        """
-        if "/Annots" not in page:
-            return []
-        annotation_dictionary_objects: list[DictionaryObject] = [annot.get_object() for annot in page["/Annots"]]
-        return [
-            Annotation(annot_dict, self.current_page)
-            for dict_obj in annotation_dictionary_objects
-            for annot_dict in Annotation.get_multiple_variables(dict_obj)
-            ]
-
-    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
-        """
-        converts the old standard to the new standard
-
-        :param pdf_path: path to the pdf file
-        :type pdf_path: str
-        :param output_folder: path to the output folder
-        :type output_folder: str
-        """
-        writer = PyPDF2.PdfWriter()
-        reader = PyPDF2.PdfReader(pdf_path)
-        new_pdf_path: str = f"{output_folder}/output.pdf"
-
-        writer.append_pages_from_reader(reader)
-
-        for page in reader.pages:
-            annots: list[Annotation] = self.get_page_annotations(page)
-
-            for annot in annots:
-                if not annot.dataset or annot.new_datset:
-                    continue
-
-                dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
-                new_annot = AnnotationBuilder.free_text(
-                    f"{annot.dataset_name} ({dataset_long_name})",
-                    rect=annot.rect,
-                )
-                new_annot[NameObject("/C")] = annot.color
-                writer.add_annotation(reader.get_page_number(page), new_annot)
-
-        with open(new_pdf_path, "wb") as fp:
-            writer.write(fp)
 
     def enter_dataset(self, annot: Annotation) -> None:
         """
