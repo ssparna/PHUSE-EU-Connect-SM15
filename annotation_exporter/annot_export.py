@@ -153,10 +153,10 @@ class AnnotationExporter:
             for annot in annots:
                 if not annot.dataset or annot.new_datset:
                     continue
-
-                print(annot.content_without_spaces)
+                
+                dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
                 new_annot = AnnotationBuilder.free_text(
-                    f"{annot.dataset_name} ({annot.content_without_spaces.split("=", 1)[1]})",
+                    f"{annot.dataset_name} ({dataset_long_name})",
                     rect=annot.rect,
                 )
                 new_annot[NameObject("/C")] = annot.color
