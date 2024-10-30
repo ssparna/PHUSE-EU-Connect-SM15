@@ -6,7 +6,7 @@ import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
-from generic import PDFAugmentor, Annotation, Page
+from generic import PDF, Annotation, Page
 
 class AnnotationExporter:
     """Responsible for exporting annotations from a pdf to an excel file"""
@@ -24,16 +24,15 @@ class AnnotationExporter:
             start_color="FFFFFFFF",
             end_color="FF000000")
         self.wb: pyxl.Workbook
-        self.pages: list[Page]
-        self.reader: PyPDF2.PdfReader
+        self.pdf: PDF
         self.output_folder: str
         self.exporter_col_ds: str | None
         self.exporter_col_var: str | None
         self.ws_datasets: Worksheet
         self.ws_variables: Worksheet
-        self.current_page: Page
         self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLABEL"]
         self.ds_replace_annots: list[dict] = []
+        self.current_page: Page
         lg.basicConfig(
             filename=f"{os.path.dirname(__file__)}/Annotation_Exporter.log",
             encoding="utf-8",
@@ -80,7 +79,6 @@ class AnnotationExporter:
         print("exporting annotations...")
         lg.info("export annots")
         self.wb = pyxl.load_workbook(template_path)
-        self.pages = []
         self.output_folder = output_folder
 
         self.exporter_col_ds = self.determine_exporter_col("Datasets")
@@ -89,19 +87,16 @@ class AnnotationExporter:
         self.ws_datasets = self.wb["Datasets"]
         self.ws_variables = self.wb["Variables"]
 
-        reader = PyPDF2.PdfReader(pdf_path)
+        self.pdf: PDF = PDF(PyPDF2.PdfReader(pdf_path))
 
-        for page in reader.pages:
-            self.current_page = Page(reader.get_page_number(page))
-            self.pages.append(self.current_page)
-            lg.info("starting on page: %s", self.current_page.get_page_nr())
+        for page in self.pdf.pages:
+            self.current_page = page
+            lg.info("starting on page: %s", page.get_page_nr())
 
-            annots = PDFAugmentor.get_page_annotations(page, reader, self.current_page)
+            self.add_to_workbook(page.get_annotations())
 
-            self.add_to_workbook(annots)
-
-            lg.debug(self.current_page.get_datasets())
-            lg.info("Page %s done!", self.current_page.get_page_nr())
+            lg.debug(page.get_datasets())
+            lg.info("Page %s done!", page.get_page_nr())
 
 
         self.wb.save(f"{output_folder}/output.xlsx")
@@ -113,7 +108,7 @@ class AnnotationExporter:
         if convert_old:
             print("converting old...")
             lg.info("converting old")
-            PDFAugmentor.convert_old_standard(pdf_path, output_folder)
+            PDF.convert_old_standard(output_folder)
 
         print("complete!")
         lg.info("exported annots")
@@ -256,7 +251,7 @@ class AnnotationExporter:
 
         """
         csv_list: list[str] = ["Dataset Name#Color\n"] # start with first line
-        for page in self.pages:
+        for page in self.pdf.pages:
             for dataset in page.get_datasets():
                 csv_entry: str = f"{dataset[0]}#{dataset[1]}\n"
                 if csv_entry in csv_list:

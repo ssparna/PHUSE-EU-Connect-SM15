@@ -1,10 +1,12 @@
 """
 contains multiple classes for various tasks
 """
+from __future__ import annotations # Nessecary for typehinting
 import os
 import logging as lg
 import PyPDF2
-from PyPDF2.generic import AnnotationBuilder, NameObject, DictionaryObject, RectangleObject
+from PyPDF2.generic import AnnotationBuilder, NameObject, DictionaryObject, RectangleObject, IndirectObject
+from PyPDF2._page import PageObject 
 
 
 SEPARATORS: tuple[str] = (",", ";", "|") # expand as needed
@@ -20,7 +22,7 @@ class Page:
     """
     Keeps track of the datasets on each page and the page number.
     """
-    def __init__(self, page_nr: int) -> None:
+    def __init__(self, page: PageObject, page_nr: int) -> None:
         """
         Initialise class.
         
@@ -28,9 +30,41 @@ class Page:
         :type page: int
         
         """
+        self.page: PageObject = page
         self.page_nr: int = page_nr
         self.datasets: set[tuple] = {}
-        self.annotations: list[Annotation] = []
+        self.has_annotations: bool = False
+        self.annotations: list[Annotation] = self.generate_annotation_list()
+
+    def generate_annotation_list(self) -> list[Annotation]:
+        """
+        Generates the list of annotations.
+        
+        :return: list of annotations
+        :rtype: list[Annotation]
+        
+        """
+        if "/Annots" not in self.page:
+            return []
+        
+        annot: IndirectObject
+        annot_list: list[Annotation] = []
+        self.has_annotations = True
+        for annot in self.page["/Annots"]:
+            annot_obj: Annotation = Annotation(annot.get_object(), self)
+            if annot_obj.is_valid:
+                annot_list.append(annot_obj)
+        
+        return annot_list
+
+    def add_annotation(self, annotation: Annotation) -> None:
+        """
+        Adds an annotation to the page.
+
+        :param annotation: The annotation to add.
+        :type annotation: Annotation
+        """
+        self.annotations.append(annotation)
 
     def get_annotations(self) -> list[Annotation]:
         """
@@ -70,15 +104,25 @@ class Page:
         """
         self.datasets.update([data]) # using add(data) doesn't work for some reason
 
-class PDFAugmentor:
+class PDF:
     """
-    holds static methods for changing the PDF file.
+    deals with the PDF file
     """
-    def __init__(self, pdf_path: str, pages: list[Page]) -> None:
-        self.pages: list[Page] = pages
-        self.pdf: PyPDF2.PdfReader =  PyPDF2.PdfReader(pdf_path)
+    def __init__(self, pdf_reader: PyPDF2.PdfReader) -> None:
+        self.pdf_reader: PyPDF2.PdfReader =  pdf_reader
+        self.pages: list[Page] = self.init_pages()
 
-    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
+    def init_pages(self) -> list[Page]:
+        """
+        initialises the pages        
+        """
+        page_list: list[Page] = []
+        for page in self.pdf_reader.pages:
+            page_list.append(Page(page, self.pdf_reader.get_page_number(page)))
+
+        return page_list
+
+    def convert_old_standard(self, output_folder: str) -> None:
         """
         converts the old standard to the new standard
 
@@ -88,15 +132,13 @@ class PDFAugmentor:
         :type output_folder: str
         """
         writer = PyPDF2.PdfWriter()
-        reader = PyPDF2.PdfReader(pdf_path)
         new_pdf_path: str = f"{output_folder}/output.pdf"
 
-        writer.append_pages_from_reader(reader)
+        writer.append_pages_from_reader(self.pdf_reader)
 
         for page in self.pages:
-            annots: list[Annotation] = self.get_page_annotations(page)
 
-            for annot in annots:
+            for annot in page.get_annotations():
                 if not annot.dataset or annot.new_datset:
                     continue
 
@@ -106,23 +148,10 @@ class PDFAugmentor:
                     rect=annot.rect,
                 )
                 new_annot[NameObject("/C")] = annot.color
-                writer.add_annotation(reader.get_page_number(page), new_annot)
+                writer.add_annotation(page.get_page_nr(), new_annot)
 
         with open(new_pdf_path, "wb") as fp:
             writer.write(fp)
-
-    def get_page_annotations(self, page: Page) -> list:
-        """
-        returns all annotations on the page
-        """
-        if page.get:
-            return []
-        annotation_dictionary_objects: list[DictionaryObject] = [annot.get_object() for annot in page["/Annots"]]
-        return [
-            Annotation(annot_dict, page)
-            for dict_obj in annotation_dictionary_objects
-            for annot_dict in Annotation.get_multiple_variables(dict_obj)
-            ]
 
 class Annotation:
     """
@@ -130,6 +159,7 @@ class Annotation:
     access to frequently used proprties and some useful methods
     """
     def __init__(self, annot_obj: DictionaryObject, page: Page) -> None:
+        self.is_valid: bool = True
         self.annot_obj = annot_obj
         self.page: Page = page
         self.dataset: bool = False
@@ -150,6 +180,7 @@ class Annotation:
                 raise KeyError # not a KeyError but requires the same action
         except KeyError:
             lg.info("Unsupported Annotation: %s", annot_obj)
+            self.is_valid = False
             return
 
         self.dataset = self.is_dataset()
