@@ -58,7 +58,7 @@ class AnnotationExporter:
             if cell.value is None:
                 cell.value = "Present in aCRF"
                 value =  "".join([i for i in cell.coordinate if not i.isdigit()])  # remove all digits
-        
+
         if value is None:
             lg.critical("no free column for sheet %s found, exiting...", sheet)
             exit()
@@ -81,7 +81,7 @@ class AnnotationExporter:
 
         """
         print("exporting annotations...")
-        lg.debug("export annots")
+        lg.info("export annots")
         self.wb = pyxl.load_workbook(template_path)
         self.pages = []
         self.output_folder = output_folder
@@ -109,15 +109,17 @@ class AnnotationExporter:
 
         self.wb.save(f"{output_folder}/output.xlsx")
         print("generating csv...")
-        lg.debug("generating csv of export")
+        lg.info("generating csv of export")
         self.generate_variable_csv()
         self.generate_dataset_csv()
 
         if convert_old:
+            print("converting old...")
+            lg.info("converting old")
             self.convert_old_standard(pdf_path, output_folder)
 
         print("complete!")
-        lg.debug("exported annots")
+        lg.info("exported annots")
 
     def get_page_annotations(self, page: PyPDF2.PageObject) -> list:
         """
@@ -153,7 +155,7 @@ class AnnotationExporter:
             for annot in annots:
                 if not annot.dataset or annot.new_datset:
                     continue
-                
+
                 dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
                 new_annot = AnnotationBuilder.free_text(
                     f"{annot.dataset_name} ({dataset_long_name})",
@@ -179,7 +181,10 @@ class AnnotationExporter:
                 y_coordinate = cell.coordinate.split("A", 1)[1]
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"] = "Present"
                 self.ws_datasets[f"{self.exporter_col_ds}{y_coordinate}"].fill = self.green_cell_fill
-                lg.debug("%s was assigned as a dataset with the color %s", annot.dataset_name, annot.color)
+
+                lg.debug(
+                    "%s was assigned as a dataset with the color %s",
+                    annot.dataset_name, annot.color)
                 return
 
         self.ws_datasets.append({
@@ -262,7 +267,6 @@ class AnnotationExporter:
                 self.add_page_cell(self.ws_variables[f"M{y_coordinate}"])
                 return
 
-        print(annot)
         self.ws_variables.append({
             "B": annot.assigned_dataset,
             "C": annot.variable_name,

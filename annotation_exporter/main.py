@@ -1,9 +1,12 @@
-"""This is the main file for the annotation export project. It allows the user to export annotations
-from a pdf to an excel file. For further information on how to use this please consult the README.md"""
+"""
+This is the main file for the annotation export project. It allows the user to export annotations
+from a pdf to an excel file. For further information on how to use this please consult the 
+README.md
+"""
 import FreeSimpleGUI as sg
 from annot_export import AnnotationExporter
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
 
     annotation_exporter: AnnotationExporter = AnnotationExporter()
     sg.theme("DarkGrey5")
@@ -59,9 +62,13 @@ if __name__ == "__main__":
                 pdf_path = f"{pdf_p}.pdf"
 
             output_folder = output_p
-        else: 
+        else:
             continue
 
-        annotation_exporter.export_annotations(xlsx_path, pdf_path, output_folder, convert_old=convert_old)
+        annotation_exporter.export_annotations(
+            xlsx_path,
+            pdf_path,
+            output_folder,
+            convert_old=convert_old)
 
     window.close()

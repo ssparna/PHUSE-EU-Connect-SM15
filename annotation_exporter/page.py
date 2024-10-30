@@ -5,7 +5,7 @@ class Page:
     """
     Keeps track of the datasets on each page and the page number.
     """
-    def __init__(self, page_nr: int):
+    def __init__(self, page_nr: int) -> None:
         """
         Initialise class.
         
@@ -14,9 +14,9 @@ class Page:
         
         """
         self.page_nr: int = page_nr
-        self.datasets: list[dict] = []
+        self.datasets: set[tuple] = {}
 
-    def get_page_nr(self):
+    def get_page_nr(self) -> int:
         """
         Simple getter for page number.
         
@@ -26,21 +26,21 @@ class Page:
         """
         return self.page_nr
 
-    def get_datasets(self):
+    def get_datasets(self) -> set[tuple]:
         """
         Simple getter for datasets.
 
-        :return: The datasets.
-        :rtype: list[list]
+        :return: The datasets. each dataset is a tuple with dataset name and color
+        :rtype: set[tuple]
         
         """
         return self.datasets
 
-    def add_datasets(self, data: dict):
+    def add_datasets(self, data: tuple):
         """
         Adds the datasets to the list.
 
         :param data: The dataset to add.
-        :type data: dict
+        :type data: tuple
         """
-        self.datasets.append(data)
+        self.datasets.update([data]) # using add(data) doesn't work for some reason

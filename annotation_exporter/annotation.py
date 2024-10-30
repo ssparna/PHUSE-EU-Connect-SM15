@@ -16,7 +16,8 @@ separators: tuple[str] = (",", ";", "|") # expand as needed
 
 class Annotation:
     """
-    This is the class that stores a single annotation with convenient access
+    This is the class that stores a single annotation with convenient 
+    access to frequently used proprties and some useful methods
     """
     def __init__(self, annot_obj: DictionaryObject, page: Page) -> None:
         self.annot_obj = annot_obj
@@ -50,20 +51,24 @@ class Annotation:
         """
         truncates the annotation if it contains invalid text
         """
-        if self.dataset or self.supp: 
+        if self.dataset or self.supp:
             return
-        
+
         for separator in separators:
             if separator not in self.content:
                 continue
 
             self.content = self.content.split(separator, 1)[0]
-        
 
     @staticmethod
     def get_multiple_variables(annot_obj: DictionaryObject) -> list[dict | DictionaryObject]:
         """
         returns all variables from an annotation
+
+        :param annot_obj: the annotation object
+        :type annot_obj: PyPDF2.generic.DictionaryObject
+        :return: list of annotations as either a dictionary or a dictionary object
+        :rtype: list[PyPDF2.generic.DictionaryObject | PyPDF2.generic.DictionaryObject]
         """
         split_set = set()
         try:
@@ -72,31 +77,34 @@ class Annotation:
             lg.info("Unsupported Annotation: %s", annot_obj)
             return []
         content = "".join(content.split())
-        
-        for separator in separators:
-            for string in content.split(separator):
-                if any(ext in string for ext in separators): # if any separator is in the string don't add it
-                    continue
-                elif "("  in string:
-                    string = string.split("(", 1)[0]
-                elif ")" in string:
-                    string = string.split(")", 1)[1]
 
-                if string == "":
+        for separator in separators:
+            for possible_variable in content.split(separator):
+                if any(ext in possible_variable for ext in separators): # if any separator is in the string don't add it
                     continue
-                split_set.add(string)
+                elif "("  in possible_variable:
+                    possible_variable = possible_variable.split("(", 1)[0]
+                elif ")" in possible_variable:
+                    possible_variable = possible_variable.split(")", 1)[1]
+
+                if possible_variable == "":
+                    continue
+                split_set.add(possible_variable)
 
         split_content = list(split_set)
         if len(split_content) == 1:
-            #annot_obj[NameObject("/Contents")] = NameObject(string) # truncating variable to exclude exess text
             return [annot_obj]
         else:
-            #print(f"""\n\n\nmultiple variables: {[{"/Contents": f"{string} =", "/C": annot_obj["/C"], "/Subtype": annot_obj["/Subtype"], "/Rect": annot_obj["/Rect"]} for string in split_content]}\n\n\n""")
-            return [{"/Contents": string, "/C": annot_obj["/C"], "/Subtype": annot_obj["/Subtype"], "/Rect": annot_obj["/Rect"]} for string in split_content]
+            return [{"/Contents": string,
+                        "/C": annot_obj["/C"],
+                        "/Subtype": annot_obj["/Subtype"],
+                        "/Rect": annot_obj["/Rect"]}
+                        for string in split_content]
 
     def is_dataset(self) -> bool:
         """
         returns wehther the annotation is a dataset or not
+        and implicitly adds the dataset to the page
         """
         if len(self.content_without_spaces.split("(", 1)[0]) == 2: # new standard
             self.new_datset = True
