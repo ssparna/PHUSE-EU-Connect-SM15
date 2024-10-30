@@ -5,7 +5,7 @@ from __future__ import annotations # Nessecary for typehinting
 import os
 import logging as lg
 import PyPDF2
-from PyPDF2.generic import AnnotationBuilder, NameObject, DictionaryObject, RectangleObject, IndirectObject
+from PyPDF2.generic import AnnotationBuilder, NameObject, DictionaryObject, RectangleObject
 from PyPDF2._page import PageObject 
 
 
@@ -32,7 +32,7 @@ class Page:
         """
         self.page: PageObject = page
         self.page_nr: int = page_nr
-        self.datasets: set[tuple] = {}
+        self.datasets: list[tuple] = []
         self.has_annotations: bool = False
         self.annotations: list[Annotation] = self.generate_annotation_list()
 
@@ -46,16 +46,17 @@ class Page:
         """
         if "/Annots" not in self.page:
             return []
-        
-        annot: IndirectObject
-        annot_list: list[Annotation] = []
+
         self.has_annotations = True
-        for annot in self.page["/Annots"]:
-            annot_obj: Annotation = Annotation(annot.get_object(), self)
-            if annot_obj.is_valid:
-                annot_list.append(annot_obj)
-        
-        return annot_list
+        annotation_dictionary_objects: list[DictionaryObject] = [annot.get_object() for annot in self.page["/Annots"]]
+        test = [dict_obj for dict_obj in annotation_dictionary_objects for annot_dict in Annotation.get_multiple_variables(dict_obj) if dict_obj is dict]
+        print(test)
+
+        return [
+            Annotation(annot_dict, self)
+            for dict_obj in annotation_dictionary_objects
+            for annot_dict in Annotation.get_multiple_variables(dict_obj)
+            ]
 
     def add_annotation(self, annotation: Annotation) -> None:
         """
@@ -85,12 +86,12 @@ class Page:
         """
         return self.page_nr
 
-    def get_datasets(self) -> set[tuple]:
+    def get_datasets(self) -> list[tuple]:
         """
         Simple getter for datasets.
 
         :return: The datasets. each dataset is a tuple with dataset name and color
-        :rtype: set[tuple]
+        :rtype: list[tuple]
         
         """
         return self.datasets
@@ -102,7 +103,7 @@ class Page:
         :param data: The dataset to add.
         :type data: tuple
         """
-        self.datasets.update([data]) # using add(data) doesn't work for some reason
+        self.datasets.append(data)
 
 class PDF:
     """
@@ -166,9 +167,9 @@ class Annotation:
         self.new_datset: bool = False
         self.supp: bool = False
         self.separators: tuple[str] = SEPARATORS
-        self.dataset_name: str
+        self.dataset_name: str = None
         self.assigned_dataset: str = None
-        self.variable_name: str
+        self.variable_name: str = None
 
         try:
             self.color: list[float] = annot_obj["/C"]
@@ -223,24 +224,24 @@ class Annotation:
             for possible_variable in content.split(separator):
                 if any(ext in possible_variable for ext in SEPARATORS): # if any separator is in the string don't add it
                     continue
-                elif "("  in possible_variable:
+                print("before bracket check: ", possible_variable)
+                if "("  in possible_variable: #brackets are special cases
                     possible_variable = possible_variable.split("(", 1)[0]
                 elif ")" in possible_variable:
                     possible_variable = possible_variable.split(")", 1)[1]
+                print("after bracket check: ", possible_variable)
 
                 if possible_variable == "":
                     continue
                 split_set.add(possible_variable)
 
         split_content = list(split_set)
-        if len(split_content) == 1:
-            return [annot_obj]
-        else:
-            return [{"/Contents": string,
-                        "/C": annot_obj["/C"],
-                        "/Subtype": annot_obj["/Subtype"],
-                        "/Rect": annot_obj["/Rect"]}
-                        for string in split_content]
+        print("returning: ", split_content)
+        return [{"/Contents": string,
+                    "/C": annot_obj["/C"],
+                    "/Subtype": annot_obj["/Subtype"],
+                    "/Rect": annot_obj["/Rect"]}
+                    for string in split_content]
 
     def is_dataset(self) -> bool:
         """

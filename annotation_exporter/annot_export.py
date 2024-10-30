@@ -1,6 +1,7 @@
 """Contains the AnnotationExporter class which contains the logic for exporting annotations"""
 import os
 import logging as lg
+from sqlite3 import connect, Connection, Cursor
 import PyPDF2
 import PyPDF2.generic
 import openpyxl as pyxl
@@ -61,7 +62,7 @@ class AnnotationExporter:
 
         return value
 
-    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str, convert_old: bool = False) -> None:
+    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str, convert_old: bool = False, create_sqlite: bool = False) -> None:
         """
         Exports annots, this is the main function that should be called. 
         Expects the paths to have the correct endings.
@@ -108,10 +109,47 @@ class AnnotationExporter:
         if convert_old:
             print("converting old...")
             lg.info("converting old")
-            PDF.convert_old_standard(output_folder)
+            self.pdf.convert_old_standard(output_folder)
+
+        if create_sqlite:
+            print("generating sqlite...")
+            lg.info("generating sqlite")
+            self.generate_sqlite(output_folder)
 
         print("complete!")
         lg.info("exported annots")
+
+    def generate_sqlite(self, output_folder: str) -> None:
+        """
+        generates an sqlite database from the annotations
+
+        :param output_folder: path to the output folder
+        :type output_folder: str
+
+        """
+        conn: Connection= connect(f"{output_folder}/annotations.sqlite")
+        c: Cursor = conn.cursor()
+        c.execute("DROP TABLE IF EXISTS annotations")
+        c.execute("""CREATE TABLE annotations
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dataset BOOLEAN,
+                    new_dataset BOOLEAN,
+                    dataset_name TEXT,
+                    supp BOOLEAN,
+                    assigned_dataset TEXT,
+                    variable_name TEXT,
+                    content TEXT,
+                    color TEXT)""")
+        
+        for page in self.pdf.pages:
+            for annot in page.get_annotations():
+                if annot.is_valid:
+                    c.execute("""INSERT INTO annotations
+                        (dataset, new_dataset, dataset_name, supp, assigned_dataset, variable_name, content, color)
+                        VALUES (?,?,?,?,?,?,?,?)""",
+                        (annot.dataset, annot.new_datset, annot.dataset_name, annot.supp, annot.assigned_dataset, annot.variable_name, annot.content, str(annot.color)))
+
+        conn.commit()
 
     def enter_dataset(self, annot: Annotation) -> None:
         """

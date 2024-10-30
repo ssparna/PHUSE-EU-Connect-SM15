@@ -30,7 +30,7 @@ if __name__ == "__main__":
         [sg.Push(), sg.Text("PDF Path"), sg.InputText(key="pdf",default_text=r"PDF/example_compressed"), sg.FileBrowse(file_types=(("PDF", "*.pdf"),))],
         [sg.Push(), sg.Text("Spreadsheet Path"), sg.InputText(key="xlsx", default_text=r"Templates/temp"), sg.FileBrowse(file_types=(("Excel", "*.xlsx"),))],
         [sg.Push(), sg.Text("Output Folder"), sg.InputText(key="output", default_text=r"outputs"), sg.FolderBrowse()],
-        [sg.Checkbox("Convert Old Standard", key="conv_old"), sg.Push(), sg.Button("Export Annotations", key="export")]
+        [sg.Checkbox("Convert Old Standard", key="conv_old"), sg.Checkbox("Create SQLite database", key="sqlite"), sg.Push(), sg.Button("Export Annotations", key="export")]
         ]
 
     window = sg.Window(title="Annotation Export", layout=layout, margins=(150, 125))
@@ -46,6 +46,7 @@ if __name__ == "__main__":
             xlsx_p = values["xlsx"]
             output_p = values["output"]
             convert_old = values["conv_old"]
+            sqlite = values["sqlite"]
         except KeyError:
             continue
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
             xlsx_path,
             pdf_path,
             output_folder,
-            convert_old=convert_old)
+            convert_old=convert_old,
+            create_sqlite=sqlite)
 
     window.close()
-

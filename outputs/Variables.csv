@@ -1,4 +1,28 @@
 Variable Name#Variable Label#Dataset Name#Page(s)
+DSTERM#Reported Term for the Disposition Event#DS#2
+DSCAT#Category for Disposition Event#DS#2
+RPTESTCD#Short Name of Reproductive Test#RP#3
+RPTEST#Name of Reproductive Test#RP#3
+RPORRES#Result or Finding in Original Units#RP#3
+VSTEST#Vital Signs Test Name#VS#3
+VSORRES#Result or Finding in Original Units#VS#3
+VSORRESU#Original Units#VS#3
+VSSTRESU#Standard Units#VS#3
+SUBJID#Subject Identifier for the Study#DM#2
+RFICDTC#Date/Time of Informed Consent#DM#2
+SITEID#Study Site Identifier#DM#2
+BRTHDTC#Date/Time of Birth#DM#3
+AGE#Age#DM#3
+AGEU#Age Units#DM#3
+SEX#Sex#DM#3
+RACE#Race#DM#3
+ETCD#Element Code#SE#2
+ELEMENT#Description of Element#SE#2
+SESTDTC#Start Date/Time of Element#SE#2
+VISIT#Visit Name#SV#3
+SVSTDTC#Start Date/Time of Observation#SV#3
+SVENDTC#End Date/Time of Observation#SV#3
+DSSDTC#None#DS#2
 QVAL#None#SUPPDS#2
 QNAM#None#SUPPDS#2
 QLABEL#None#SUPPDS#2
