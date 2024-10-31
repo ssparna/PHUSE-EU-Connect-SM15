@@ -1,15 +1,13 @@
 """Contains the AnnotationExporter class which contains the logic for exporting annotations"""
 import os
 import logging as lg
+from sqlite3 import connect, Connection, Cursor
 import PyPDF2
-from PyPDF2.generic import DictionaryObject, AnnotationBuilder, NameObject
 import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
-from page import Page
-from annotation import Annotation
-
+from generic import PDF, Annotation, Page
 
 class AnnotationExporter:
     """Responsible for exporting annotations from a pdf to an excel file"""
@@ -27,16 +25,15 @@ class AnnotationExporter:
             start_color="FFFFFFFF",
             end_color="FF000000")
         self.wb: pyxl.Workbook
-        self.pages: list[Page]
-        self.reader: PyPDF2.PdfReader
+        self.pdf: PDF
         self.output_folder: str
         self.exporter_col_ds: str | None
         self.exporter_col_var: str | None
         self.ws_datasets: Worksheet
         self.ws_variables: Worksheet
-        self.current_page: Page
         self.supp_var_names: list[str] = ["QVAL", "QNAM", "QLABEL"]
         self.ds_replace_annots: list[dict] = []
+        self.current_page: Page
         lg.basicConfig(
             filename=f"{os.path.dirname(__file__)}/Annotation_Exporter.log",
             encoding="utf-8",
@@ -65,7 +62,7 @@ class AnnotationExporter:
 
         return value
 
-    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str, convert_old: bool = False) -> None:
+    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str) -> None:
         """
         Exports annots, this is the main function that should be called. 
         Expects the paths to have the correct endings.
@@ -83,7 +80,6 @@ class AnnotationExporter:
         print("exporting annotations...")
         lg.info("export annots")
         self.wb = pyxl.load_workbook(template_path)
-        self.pages = []
         self.output_folder = output_folder
 
         self.exporter_col_ds = self.determine_exporter_col("Datasets")
@@ -92,19 +88,16 @@ class AnnotationExporter:
         self.ws_datasets = self.wb["Datasets"]
         self.ws_variables = self.wb["Variables"]
 
-        reader = PyPDF2.PdfReader(pdf_path)
+        self.pdf: PDF = PDF(PyPDF2.PdfReader(pdf_path))
 
-        for page in reader.pages:
-            self.current_page = Page(reader.get_page_number(page))
-            self.pages.append(self.current_page)
-            lg.info("starting on page: %s", self.current_page.get_page_nr())
+        for page in self.pdf.pages:
+            self.current_page = page
+            lg.info("starting on page: %s", page.get_page_nr())
 
-            annots = self.get_page_annotations(page)
+            self.add_to_workbook(page.get_annotations())
 
-            self.add_to_workbook(annots)
-
-            lg.debug(self.current_page.get_datasets())
-            lg.info("Page %s done!", self.current_page.get_page_nr())
+            lg.debug(page.get_datasets())
+            lg.info("Page %s done!", page.get_page_nr())
 
 
         self.wb.save(f"{output_folder}/output.xlsx")
@@ -113,59 +106,40 @@ class AnnotationExporter:
         self.generate_variable_csv()
         self.generate_dataset_csv()
 
-        if convert_old:
-            print("converting old...")
-            lg.info("converting old")
-            self.convert_old_standard(pdf_path, output_folder)
-
         print("complete!")
         lg.info("exported annots")
 
-    def get_page_annotations(self, page: PyPDF2.PageObject) -> list:
+    def generate_sqlite(self, output_folder: str) -> None:
         """
-        returns all annotations on the page
-        """
-        if "/Annots" not in page:
-            return []
-        annotation_dictionary_objects: list[DictionaryObject] = [annot.get_object() for annot in page["/Annots"]]
-        return [
-            Annotation(annot_dict, self.current_page)
-            for dict_obj in annotation_dictionary_objects
-            for annot_dict in Annotation.get_multiple_variables(dict_obj)
-            ]
+        generates an sqlite database from the annotations
 
-    def convert_old_standard(self, pdf_path: str, output_folder: str) -> None:
-        """
-        converts the old standard to the new standard
-
-        :param pdf_path: path to the pdf file
-        :type pdf_path: str
         :param output_folder: path to the output folder
         :type output_folder: str
+
         """
-        writer = PyPDF2.PdfWriter()
-        reader = PyPDF2.PdfReader(pdf_path)
-        new_pdf_path: str = f"{output_folder}/output.pdf"
+        conn: Connection= connect(f"{output_folder}/annotations.sqlite")
+        c: Cursor = conn.cursor()
+        c.execute("DROP TABLE IF EXISTS annotations")
+        c.execute("""CREATE TABLE annotations
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dataset BOOLEAN,
+                    new_dataset BOOLEAN,
+                    dataset_name TEXT,
+                    supp BOOLEAN,
+                    assigned_dataset TEXT,
+                    variable_name TEXT,
+                    content TEXT,
+                    color TEXT)""")
+        
+        for page in self.pdf.pages:
+            for annot in page.get_annotations():
+                if annot.is_valid:
+                    c.execute("""INSERT INTO annotations
+                        (dataset, new_dataset, dataset_name, supp, assigned_dataset, variable_name, content, color)
+                        VALUES (?,?,?,?,?,?,?,?)""",
+                        (annot.dataset, annot.new_datset, annot.dataset_name, annot.supp, annot.assigned_dataset, annot.variable_name, annot.content, str(annot.color)))
 
-        writer.append_pages_from_reader(reader)
-
-        for page in reader.pages:
-            annots: list[Annotation] = self.get_page_annotations(page)
-
-            for annot in annots:
-                if not annot.dataset or annot.new_datset:
-                    continue
-
-                dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
-                new_annot = AnnotationBuilder.free_text(
-                    f"{annot.dataset_name} ({dataset_long_name})",
-                    rect=annot.rect,
-                )
-                new_annot[NameObject("/C")] = annot.color
-                writer.add_annotation(reader.get_page_number(page), new_annot)
-
-        with open(new_pdf_path, "wb") as fp:
-            writer.write(fp)
+        conn.commit()
 
     def enter_dataset(self, annot: Annotation) -> None:
         """
@@ -305,7 +279,7 @@ class AnnotationExporter:
 
         """
         csv_list: list[str] = ["Dataset Name#Color\n"] # start with first line
-        for page in self.pages:
+        for page in self.pdf.pages:
             for dataset in page.get_datasets():
                 csv_entry: str = f"{dataset[0]}#{dataset[1]}\n"
                 if csv_entry in csv_list:

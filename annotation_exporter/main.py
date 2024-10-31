@@ -6,33 +6,35 @@ README.md
 import FreeSimpleGUI as sg
 from annot_export import AnnotationExporter
 
+
+def ending_present(string: str, ending: str) -> bool:
+    """checks the presence of the correct ending"""
+    split_str = string.split(".")
+    if split_str[-1] == ending:
+        return True
+    else:
+        return False
+
+def conv_paths(path: str) -> None:
+    """replaces all backslashes to prevent accidental escape sequences"""
+    backslash = r"\ "
+    backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
+    path.replace(backslash, "/")
+
 if __name__ == "__main__":
 
     annotation_exporter: AnnotationExporter = AnnotationExporter()
     sg.theme("DarkGrey5")
-    layout = [
+    layout: list[list[sg.Element]] = [
         [sg.Text("Annotation Exporter V 0.2")],
         [sg.Push(), sg.Text("PDF Path"), sg.InputText(key="pdf",default_text=r"PDF/example_compressed"), sg.FileBrowse(file_types=(("PDF", "*.pdf"),))],
         [sg.Push(), sg.Text("Spreadsheet Path"), sg.InputText(key="xlsx", default_text=r"Templates/temp"), sg.FileBrowse(file_types=(("Excel", "*.xlsx"),))],
         [sg.Push(), sg.Text("Output Folder"), sg.InputText(key="output", default_text=r"outputs"), sg.FolderBrowse()],
-        [sg.Checkbox("Convert Old Standard", key="conv_old"), sg.Push(), sg.Button("Export Annotations", key="export")]
+        [sg.Checkbox("Convert Old Standard", key="conv_old"), sg.Checkbox("Create SQLite database", key="sqlite"), sg.Push(), sg.Button("Export Annotations", key="export")]
         ]
 
-    window = sg.Window(title="Annotation Export", layout=layout, margins=(150, 125))
+    window: sg.Window = sg.Window(title="Annotation Export", layout=layout, margins=(150, 125))
 
-    def ending_present(string: str, ending: str):
-        """checks the presence of the correct ending"""
-        split_str = string.split(".")
-        if split_str[-1] == ending:
-            return True
-        else:
-            return False
-
-    def conv_paths(path):
-        """replaces all backslashes to prevent accidental escape sequences"""
-        backslash = r"\ "
-        backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
-        path.replace(backslash, "/")
 
 
     while True:
@@ -44,6 +46,7 @@ if __name__ == "__main__":
             xlsx_p = values["xlsx"]
             output_p = values["output"]
             convert_old = values["conv_old"]
+            sqlite = values["sqlite"]
         except KeyError:
             continue
 
@@ -68,7 +71,13 @@ if __name__ == "__main__":
         annotation_exporter.export_annotations(
             xlsx_path,
             pdf_path,
-            output_folder,
-            convert_old=convert_old)
+            output_folder)
+
+        if convert_old:
+            annotation_exporter.pdf.convert_old_standard(output_folder)
+
+        if sqlite:
+            annotation_exporter.generate_sqlite(output_folder)
+
 
     window.close()
