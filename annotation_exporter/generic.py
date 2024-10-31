@@ -49,8 +49,6 @@ class Page:
 
         self.has_annotations = True
         annotation_dictionary_objects: list[DictionaryObject] = [annot.get_object() for annot in self.page["/Annots"]]
-        test = [dict_obj for dict_obj in annotation_dictionary_objects for annot_dict in Annotation.get_multiple_variables(dict_obj) if dict_obj is dict]
-        print(test)
 
         return [
             Annotation(annot_dict, self)
@@ -144,6 +142,7 @@ class PDF:
                     continue
 
                 dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
+                print(dataset_long_name, annot.content)
                 new_annot = AnnotationBuilder.free_text(
                     f"{annot.dataset_name} ({dataset_long_name})",
                     rect=annot.rect,
@@ -218,25 +217,21 @@ class Annotation:
         except KeyError:
             lg.info("Unsupported Annotation: %s", annot_obj)
             return []
-        content = "".join(content.split())
 
         for separator in SEPARATORS:
             for possible_variable in content.split(separator):
                 if any(ext in possible_variable for ext in SEPARATORS): # if any separator is in the string don't add it
                     continue
-                print("before bracket check: ", possible_variable)
-                if "("  in possible_variable: #brackets are special cases
+                elif "("  in possible_variable: #brackets are special cases
                     possible_variable = possible_variable.split("(", 1)[0]
                 elif ")" in possible_variable:
                     possible_variable = possible_variable.split(")", 1)[1]
-                print("after bracket check: ", possible_variable)
 
                 if possible_variable == "":
                     continue
                 split_set.add(possible_variable)
 
         split_content = list(split_set)
-        print("returning: ", split_content)
         return [{"/Contents": string,
                     "/C": annot_obj["/C"],
                     "/Subtype": annot_obj["/Subtype"],

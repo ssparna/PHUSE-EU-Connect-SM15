@@ -62,7 +62,7 @@ class AnnotationExporter:
 
         return value
 
-    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str, convert_old: bool = False, create_sqlite: bool = False) -> None:
+    def export_annotations(self, template_path: str, pdf_path: str, output_folder: str) -> None:
         """
         Exports annots, this is the main function that should be called. 
         Expects the paths to have the correct endings.
@@ -105,16 +105,6 @@ class AnnotationExporter:
         lg.info("generating csv of export")
         self.generate_variable_csv()
         self.generate_dataset_csv()
-
-        if convert_old:
-            print("converting old...")
-            lg.info("converting old")
-            self.pdf.convert_old_standard(output_folder)
-
-        if create_sqlite:
-            print("generating sqlite...")
-            lg.info("generating sqlite")
-            self.generate_sqlite(output_folder)
 
         print("complete!")
         lg.info("exported annots")
