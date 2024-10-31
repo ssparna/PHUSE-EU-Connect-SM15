@@ -3,16 +3,10 @@ This is an example project for the accompanying presentation and paper at PHUSE 
 
 The purpose of this repo is to provide access to the code showcased in the previously mentioned presentation and paper. Feel free to use this as a baseline or inspiration to improve your workflow when dealing with the Cdisk standard.
 
-## Table of Contents
-
-- The code (split in three files)
-- Example inputs
-- Generated outputs for the example inputs
-
 ## Installation
 
 ### Requirements:
-- Python 3.6 or later
+- Python 3.10 or later
 - openpyxl
 - PyPDF2
 - FreeSimpleGUI
