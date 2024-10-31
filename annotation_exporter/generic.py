@@ -1,12 +1,15 @@
 """
-contains multiple classes for various tasks
+contains multiple classes for various tasks:
+-Page class for keeping track of page information and annotations
+-PDF class for reading and modifying pdf files
+-Annotation class for acessing annotations easily
 """
 from __future__ import annotations # Nessecary for typehinting
 import os
 import logging as lg
 import PyPDF2
 from PyPDF2.generic import AnnotationBuilder, NameObject, DictionaryObject, RectangleObject
-from PyPDF2._page import PageObject 
+from PyPDF2._page import PageObject
 
 
 SEPARATORS: tuple[str] = (",", ";", "|") # expand as needed
@@ -24,11 +27,13 @@ class Page:
     """
     def __init__(self, page: PageObject, page_nr: int) -> None:
         """
-        Initialise class.
+        Initialise class. page_nr is passed because of the way PyPDF2 works
+        where the page number is not in the page object.
         
+        :param page: The page object.
+        :type page: PageObject
         :param page_nr: Page number.
         :type page: int
-        
         """
         self.page: PageObject = page
         self.page_nr: int = page_nr
@@ -38,11 +43,11 @@ class Page:
 
     def generate_annotation_list(self) -> list[Annotation]:
         """
-        Generates the list of annotations.
+        Generates the list of annotations, resolves 
+        IndirectObject references and creates Annotation objects.
         
         :return: list of annotations
         :rtype: list[Annotation]
-        
         """
         if "/Annots" not in self.page:
             return []
@@ -76,25 +81,23 @@ class Page:
 
     def get_page_nr(self) -> int:
         """
-        Simple getter for page number.
+        Simple getter for the page number.
         
         :return: The page number.
         :rtype: int
-        
         """
         return self.page_nr
 
     def get_datasets(self) -> list[tuple]:
         """
-        Simple getter for datasets.
+        Simple getter for all datasets.
 
         :return: The datasets. each dataset is a tuple with dataset name and color
         :rtype: list[tuple]
-        
         """
         return self.datasets
 
-    def add_datasets(self, data: tuple):
+    def add_datasets(self, data: tuple) -> None:
         """
         Adds the datasets to the list.
 
@@ -105,7 +108,7 @@ class Page:
 
 class PDF:
     """
-    deals with the PDF file
+    Modifies the pdf file and generates a data structure to work on
     """
     def __init__(self, pdf_reader: PyPDF2.PdfReader) -> None:
         self.pdf_reader: PyPDF2.PdfReader =  pdf_reader
@@ -113,7 +116,10 @@ class PDF:
 
     def init_pages(self) -> list[Page]:
         """
-        initialises the pages        
+        Initialises the pages that will initialize the Annotations
+
+        :return: list of pages
+        :rtype: list[Page]
         """
         page_list: list[Page] = []
         for page in self.pdf_reader.pages:
@@ -123,10 +129,9 @@ class PDF:
 
     def convert_old_standard(self, output_folder: str) -> None:
         """
-        converts the old standard to the new standard
+        Converts the old standard to the new standard,
+        for reference check the gitHub repo.
 
-        :param pdf_path: path to the pdf file
-        :type pdf_path: str
         :param output_folder: path to the output folder
         :type output_folder: str
         """
@@ -202,18 +207,23 @@ class Annotation:
             self.content = self.content.split(separator, 1)[0]
 
     @staticmethod
-    def get_multiple_variables(annot_obj: DictionaryObject) -> list[dict | DictionaryObject]:
+    def get_multiple_variables(annot_obj: DictionaryObject) -> list[dict]:
         """
-        returns all variables from an annotation
+        returns all variables from an annotation. this is used to pick up on multiple variables
+        being in the same annotation.  This has the side effect of converting the DictionaryObjects 
+        to dictionaries which looses some (hopefully irrelevant) data.
 
         :param annot_obj: the annotation object
-        :type annot_obj: PyPDF2.generic.DictionaryObject
-        :return: list of annotations as either a dictionary or a dictionary object
-        :rtype: list[PyPDF2.generic.DictionaryObject | PyPDF2.generic.DictionaryObject]
+        :type annot_obj: DictionaryObject
+        :return: list of annotations as a list of dictionaries
+        :rtype: list[dict]
         """
         split_set = set()
-        try:
-            content = annot_obj["/Contents"]
+        try: # try except as this is an unsafe annotation
+            content: str = annot_obj["/Contents"]
+            color: list[float] = annot_obj["/C"]
+            subtype: str = annot_obj["/Subtype"]
+            rect: list[float] = annot_obj["/Rect"]
         except KeyError:
             lg.info("Unsupported Annotation: %s", annot_obj)
             return []
@@ -233,15 +243,21 @@ class Annotation:
 
         split_content = list(split_set)
         return [{"/Contents": string,
-                    "/C": annot_obj["/C"],
-                    "/Subtype": annot_obj["/Subtype"],
-                    "/Rect": annot_obj["/Rect"]}
+                    "/C": color,
+                    "/Subtype": subtype,
+                    "/Rect": rect}
                     for string in split_content]
 
     def is_dataset(self) -> bool:
         """
-        returns wehther the annotation is a dataset or not
-        and implicitly adds the dataset to the page
+        Returns wehther the annotation is a dataset or not
+        and implicitly adds the dataset to the page. There is
+        a static method that checks if a string is a dataset 
+        aswell so if you need to call this on just a string you
+        can use Annotation.is_dataset_static(string).
+
+        :return: if the annotation is a dataset
+        :rtype: bool
         """
         if len(self.content_without_spaces.split("(", 1)[0]) == 2: # new standard
             self.new_datset = True
@@ -257,7 +273,10 @@ class Annotation:
 
     def is_supp(self) -> bool:
         """
-        returns wehther the annotation is a supplementary variable or not
+        returns wether the annotation is a supplementary variable or not
+
+        :return: if the annotation is a supplementary variable
+        :rtype: bool
         """
         if self.content_without_spaces.split("=", 1)[0][:4] == "SUPP":
             self.dataset_name = self.content_without_spaces.split("=", 1)[0][:6]
@@ -266,7 +285,7 @@ class Annotation:
 
     def sort_into_datasets(self) -> None:
         """
-        sorts an annotation into a dataset
+        Sorts self into one of the datasets from the page it is on
         """
         for combination in self.page.get_datasets():
             if combination[1] == self.color: # match color
@@ -277,6 +296,22 @@ class Annotation:
                 return
 
         lg.error("no dataset was matched to variable! %s", self)
+
+    @staticmethod
+    def is_dataset_static(string: str) -> bool:
+        """
+        static method that checks if a string is a dataset
+        :param string: the string to check
+
+        :type string: str
+        :return: True if the string is a dataset, False otherwise
+        :rtype: bool
+        """
+        if len(string.split("(", 1)[0]) == 2: # new standard
+            return True
+        elif len(string.split("=", 1)[0]) == 2: # old standard
+            return True
+        return False
 
     def __str__(self) -> str:
         return f"Annotation: {self.content} on page {self.page.get_page_nr()}"

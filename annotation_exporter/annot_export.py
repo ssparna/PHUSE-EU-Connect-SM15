@@ -7,14 +7,16 @@ import PyPDF2.generic
 import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
+from openpyxl.cell.cell import Cell
 from generic import PDF, Annotation, Page
 
 class AnnotationExporter:
-    """Responsible for exporting annotations from a pdf to an excel file"""
+    """
+    Responsible for exporting annotations from a pdf to an excel file
+    """
     def __init__(self) -> None:
         """
-        Simple Constructor
-
+        initializes variables for use in the programm
         """
         self.green_cell_fill = PatternFill(
             start_color = "FF00FF00",
@@ -48,7 +50,6 @@ class AnnotationExporter:
 
         :return: the exel column index of the free column or None
         :rtype: str | None
-
         """
         value = None
         for cell in self.wb[sheet]["1"]:
@@ -75,7 +76,6 @@ class AnnotationExporter:
         :type output_folder: str
         :param convert_old: if the old standard should be converted, defaults to False
         :type convert_old: bool, optional
-
         """
         print("exporting annotations...")
         lg.info("export annots")
@@ -111,11 +111,11 @@ class AnnotationExporter:
 
     def generate_sqlite(self, output_folder: str) -> None:
         """
-        generates an sqlite database from the annotations
+        generates an sqlite database from the annotations and
+        saves it in the output folder
 
         :param output_folder: path to the output folder
         :type output_folder: str
-
         """
         conn: Connection= connect(f"{output_folder}/annotations.sqlite")
         c: Cursor = conn.cursor()
@@ -130,14 +130,21 @@ class AnnotationExporter:
                     variable_name TEXT,
                     content TEXT,
                     color TEXT)""")
-        
+
         for page in self.pdf.pages:
             for annot in page.get_annotations():
                 if annot.is_valid:
                     c.execute("""INSERT INTO annotations
                         (dataset, new_dataset, dataset_name, supp, assigned_dataset, variable_name, content, color)
                         VALUES (?,?,?,?,?,?,?,?)""",
-                        (annot.dataset, annot.new_datset, annot.dataset_name, annot.supp, annot.assigned_dataset, annot.variable_name, annot.content, str(annot.color)))
+                        (annot.dataset,
+                         annot.new_datset,
+                         annot.dataset_name,
+                         annot.supp,
+                         annot.assigned_dataset,
+                         annot.variable_name,
+                         annot.content,
+                         str(annot.color)))
 
         conn.commit()
 
@@ -147,7 +154,6 @@ class AnnotationExporter:
 
         :param annot: annotation object
         :type annot: Annotation
-
         """
         for cell in self.ws_datasets.iter_rows(max_col=1):
             cell = cell[0]
@@ -173,8 +179,7 @@ class AnnotationExporter:
         adds supp dataset to datasets and the three supp variables to variables
 
         :param annot: annotation object
-        :type annot: dict
-
+        :type annot: Annotation
         """
         self.enter_dataset(annot)
 
@@ -206,10 +211,10 @@ class AnnotationExporter:
     def add_to_workbook(self, annotations: list[Annotation]) -> None:
         """
         adds both datasets and variables to the workbook
+        takes a list of annotations, desigend to work with PDF.pages
         
         :param data: list of annotations
         :type data: list[dict]
-
         """
         for annot in annotations:
             if annot.dataset:
@@ -222,6 +227,9 @@ class AnnotationExporter:
     def enter_variable(self, annot: Annotation) -> None:
         """
         adds a variable to the workbook
+
+        :param annot: annotation object
+        :type annot: Annotation
         """
         annot.sort_into_datasets()
         if annot.assigned_dataset is None:
@@ -255,8 +263,7 @@ class AnnotationExporter:
 
     def generate_variable_csv(self) -> None:
         """
-        generates the csv for the variables
-
+        generates the csv for the variables and saves it in the output folder
         """
         csv_list = ["Variable Name#Variable Label#Dataset Name#Page(s)\n"] # start with first line
         for cell in self.ws_variables[self.exporter_col_var]:
@@ -275,8 +282,7 @@ class AnnotationExporter:
 
     def generate_dataset_csv(self):
         """
-        generates the csv for the datasets
-
+        generates the csv for the datasets and saves it in the output folder
         """
         csv_list: list[str] = ["Dataset Name#Color\n"] # start with first line
         for page in self.pdf.pages:
@@ -291,13 +297,12 @@ class AnnotationExporter:
         with open(f"{self.output_folder}/Datasets.csv", "w", encoding="utf-8") as f:
             f.write(csv_str)
 
-    def add_page_cell(self, cell):
+    def add_page_cell(self, cell: Cell):
         """
-        adds the current page number to the cell
+        adds the current page number to the cell without overwriting previous page numbers
 
         :param cell: The cell in which to add the current page number
-        :type cell: openpyxl.cell.cell.Cell
-        
+        :type cell: Cell
         """
         if not cell.value:
             new_value = f"{self.current_page.get_page_nr() + 1}"

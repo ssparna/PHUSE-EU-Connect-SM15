@@ -8,15 +8,25 @@ from annot_export import AnnotationExporter
 
 
 def ending_present(string: str, ending: str) -> bool:
-    """checks the presence of the correct ending"""
+    """
+    checks the presence of the correct ending
+    :param string: the string to check
+    :type string: str
+    :param ending: the ending to check for
+    :type ending: str
+    :return: True if the ending is present, False otherwise
+    :rtype: bool
+    """
     split_str = string.split(".")
-    if split_str[-1] == ending:
-        return True
-    else:
-        return False
+    return split_str[-1] == ending
+
 
 def conv_paths(path: str) -> None:
-    """replaces all backslashes to prevent accidental escape sequences"""
+    """
+    replaces all backslashes to prevent accidental escape sequences
+    :param path: the path to replace
+    :type path: str
+    """
     backslash = r"\ "
     backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
     path.replace(backslash, "/")
