@@ -10,6 +10,7 @@ from annot_export import AnnotationExporter
 def ending_present(string: str, ending: str) -> bool:
     """
     checks the presence of the correct ending
+    
     :param string: the string to check
     :type string: str
     :param ending: the ending to check for
@@ -24,6 +25,7 @@ def ending_present(string: str, ending: str) -> bool:
 def conv_paths(path: str) -> None:
     """
     replaces all backslashes to prevent accidental escape sequences
+
     :param path: the path to replace
     :type path: str
     """

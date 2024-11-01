@@ -1,7 +1,7 @@
 """
-contains multiple classes for various tasks:
--Page class for keeping track of page information and annotations
--PDF class for reading and modifying pdf files
+contains multiple classes for various tasks: \n
+-Page class for keeping track of page information and annotations \n
+-PDF class for reading and modifying pdf files \n
 -Annotation class for acessing annotations easily
 """
 from __future__ import annotations # Nessecary for typehinting

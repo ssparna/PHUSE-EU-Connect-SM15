@@ -1,4 +1,6 @@
-"""Contains the AnnotationExporter class which contains the logic for exporting annotations"""
+"""
+Contains the AnnotationExporter class which contains the logic for exporting annotations
+"""
 import os
 import logging as lg
 from sqlite3 import connect, Connection, Cursor
@@ -12,7 +14,8 @@ from generic import PDF, Annotation, Page
 
 class AnnotationExporter:
     """
-    Responsible for exporting annotations from a pdf to an excel file
+    Responsible for exporting annotations from a pdf to an \n 
+    excel file
     """
     def __init__(self) -> None:
         """
@@ -45,9 +48,9 @@ class AnnotationExporter:
     def determine_exporter_col(self, sheet: str) -> str | None:
         """
         determines the exporter cols. Returns the exel column index of the free column or None
+
         :param sheet: name of the sheet
         :type sheet: str
-
         :return: the exel column index of the free column or None
         :rtype: str | None
         """
@@ -74,8 +77,6 @@ class AnnotationExporter:
         :type pdf_path: str
         :param output_folder: path to the output folder
         :type output_folder: str
-        :param convert_old: if the old standard should be converted, defaults to False
-        :type convert_old: bool, optional
         """
         print("exporting annotations...")
         lg.info("export annots")
@@ -214,7 +215,7 @@ class AnnotationExporter:
         takes a list of annotations, desigend to work with PDF.pages
         
         :param data: list of annotations
-        :type data: list[dict]
+        :type data: list[Annotation]
         """
         for annot in annotations:
             if annot.dataset:
