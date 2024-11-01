@@ -47,7 +47,9 @@ class AnnotationExporter:
 
     def determine_exporter_col(self, sheet: str) -> str | None:
         """
-        determines the exporter cols. Returns the exel column index of the free column or None
+        Determines the exporter column. Returns the exel column index of the free column or None.
+        The column chosen is the first free column in the sheet. The exporter column is used for 
+        marking the entries as present.
 
         :param sheet: name of the sheet
         :type sheet: str
@@ -69,7 +71,7 @@ class AnnotationExporter:
     def export_annotations(self, template_path: str, pdf_path: str, output_folder: str) -> None:
         """
         Exports annots, this is the main function that should be called. 
-        Expects the paths to have the correct endings.
+        Expects the paths to have the correct endings (.pdf, .xlsx).
 
         :param template_path: path to the template file
         :type template_path: str
@@ -151,7 +153,7 @@ class AnnotationExporter:
 
     def enter_dataset(self, annot: Annotation) -> None:
         """
-        adds a dataset to the workbook
+        Adds a dataset to the Datasets shhet in the workbook
 
         :param annot: annotation object
         :type annot: Annotation
@@ -177,7 +179,7 @@ class AnnotationExporter:
 
     def enter_supp(self, annot: Annotation) -> None:
         """
-        adds supp dataset to datasets and the three supp variables to variables
+        adds a SUPPxx dataset to datasets and the three SUPPxx variables to variables
 
         :param annot: annotation object
         :type annot: Annotation
@@ -211,8 +213,8 @@ class AnnotationExporter:
 
     def add_to_workbook(self, annotations: list[Annotation]) -> None:
         """
-        adds both datasets and variables to the workbook
-        takes a list of annotations, desigend to work with PDF.pages
+        adds both datasets and variables to the workbook.
+        Takes a list of annotations, desigend to work with PDF.pages
         
         :param data: list of annotations
         :type data: list[Annotation]
@@ -300,16 +302,16 @@ class AnnotationExporter:
 
     def add_page_cell(self, cell: Cell):
         """
-        adds the current page number to the cell without overwriting previous page numbers
+        Appends current page number to the string in a cell if it is not already present.
 
         :param cell: The cell in which to add the current page number
         :type cell: Cell
         """
         if not cell.value:
-            new_value = f"{self.current_page.get_page_nr() + 1}"
+            new_value = str(self.current_page.get_page_nr() + 1)
+            cell.value = new_value
+            cell.fill = self.reset_cell_fill
         elif str(self.current_page.get_page_nr() + 1) in cell.value:
             return
         else:
             new_value = f"{cell.value} {self.current_page.get_page_nr() + 1}"
-        cell.value = new_value
-        cell.fill = self.reset_cell_fill

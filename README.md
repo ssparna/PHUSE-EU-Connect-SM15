@@ -12,7 +12,6 @@ The purpose of this repo is to provide access to the code showcased in the previ
 - FreeSimpleGUI
 
 ### How to use 
-All Paths need to be absolute Paths.
 1. Download the Project
 2. Create a Virtual environment
     ```{batch}
@@ -20,7 +19,7 @@ All Paths need to be absolute Paths.
     path\to\project venv\Scripts\activate
     ```
 3. Install all required packages 
-    ```{python}
+    ```{batch}
     pip install -r requirements.txt
     ```
 4. Run project/annotation_exporter/main.py

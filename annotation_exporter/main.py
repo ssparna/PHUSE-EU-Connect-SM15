@@ -10,7 +10,7 @@ from annot_export import AnnotationExporter
 def ending_present(string: str, ending: str) -> bool:
     """
     checks the presence of the correct ending
-    
+
     :param string: the string to check
     :type string: str
     :param ending: the ending to check for
