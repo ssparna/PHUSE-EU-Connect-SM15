@@ -132,14 +132,15 @@ class AnnotationExporter:
                     assigned_dataset TEXT,
                     variable_name TEXT,
                     content TEXT,
-                    color TEXT)""")
+                    color TEXT,
+                  page_number INTEGER)""")
 
         for page in self.pdf.pages:
             for annot in page.get_annotations():
                 if annot.is_valid:
                     c.execute("""INSERT INTO annotations
-                        (dataset, new_dataset, dataset_name, supp, assigned_dataset, variable_name, content, color)
-                        VALUES (?,?,?,?,?,?,?,?)""",
+                        (dataset, new_dataset, dataset_name, supp, assigned_dataset, variable_name, content, color, page_number)
+                        VALUES (?,?,?,?,?,?,?,?,?)""",
                         (annot.dataset,
                          annot.new_datset,
                          annot.dataset_name,
@@ -147,7 +148,8 @@ class AnnotationExporter:
                          annot.assigned_dataset,
                          annot.variable_name,
                          annot.content,
-                         str(annot.color)))
+                         str(annot.color),
+                         annot.page.get_page_nr()))
 
         conn.commit()
 
