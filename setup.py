@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 DESCRIPTION = "Export eCRF annotations to Excel"
 LONG_DESCRIPTION = "Automates migrating between data levels (in this case CRF and STDM spec)"
 
@@ -15,10 +15,9 @@ setup(
     install_requires=["openpyxl", "PyPDF2", "FreeSimpleGUI"],
     keywords=["python", "CRF", "CDISC"],
     classifiers= [
-            "Development Status :: 3 - Alpha",
-            "Intended Audience :: Education",
+            "Development Status :: 4 - Beta",
+            "Intended Audience :: Healthcare Industry",
             "Programming Language :: Python :: 3",
-            "Operating System :: MacOS :: MacOS X",
             "Operating System :: Microsoft :: Windows",
         ],
         license="MIT",
