@@ -133,7 +133,7 @@ class AnnotationExporter:
                     variable_name TEXT,
                     content TEXT,
                     color TEXT,
-                  page_number INTEGER)""")
+                    page_number INTEGER)""")
 
         for page in self.pdf.pages:
             for annot in page.get_annotations():
