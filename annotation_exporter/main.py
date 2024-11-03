@@ -34,7 +34,6 @@ def conv_paths(path: str) -> None:
     path.replace(backslash, "/")
 
 if __name__ == "__main__":
-
     annotation_exporter: AnnotationExporter = AnnotationExporter()
     sg.theme("DarkGrey5")
     layout: list[list[sg.Element]] = [

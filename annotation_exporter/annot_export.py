@@ -149,7 +149,7 @@ class AnnotationExporter:
                          annot.variable_name,
                          annot.content,
                          str(annot.color),
-                         annot.page.get_page_nr()))
+                         annot.page.get_page_nr() + 1))
 
         conn.commit()
 
