@@ -147,7 +147,6 @@ class PDF:
                     continue
 
                 dataset_long_name: str = annot.content.split("=", 1)[1].lstrip()
-                print(dataset_long_name, annot.content)
                 new_annot = AnnotationBuilder.free_text(
                     f"{annot.dataset_name} ({dataset_long_name})",
                     rect=annot.rect,
