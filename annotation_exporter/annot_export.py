@@ -10,7 +10,7 @@ import openpyxl as pyxl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import PatternFill
 from openpyxl.cell.cell import Cell
-from generic import PDF, Annotation, Page
+from .generic import PDF, Annotation, Page
 
 class AnnotationExporter:
     """

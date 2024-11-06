@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 DESCRIPTION = "Export eCRF annotations to Excel"
 LONG_DESCRIPTION = "Automates migrating between data levels (in this case CRF and STDM spec)"
 

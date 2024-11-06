@@ -4,7 +4,7 @@ from a pdf to an excel file. For further information on how to use this please c
 README.md
 """
 import FreeSimpleGUI as sg
-from annot_export import AnnotationExporter
+from .annot_export import AnnotationExporter
 
 
 def ending_present(string: str, ending: str) -> bool:
