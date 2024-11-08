@@ -23,7 +23,8 @@ import sys
 #print(__file__)
 #sys.path.append(os.path.abspath("."))
 #print(os.path.abspath("./././"))
-sys.path.append(os.path.abspath("./././"))
+print(os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("."))
 #sys.path.append(os.path.join(os.path.dirname(__file__), '././')) 
 
 
