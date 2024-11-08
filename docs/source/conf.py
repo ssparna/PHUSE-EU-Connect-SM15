@@ -24,13 +24,15 @@ import sys
 #sys.path.append(os.path.abspath("."))
 #print(os.path.abspath("./././"))
 #sys.path.insert(0, os.path.abspath("."))
-sys.path.insert(0, os.path.abspath("./src"))
+sys.path.insert(0, os.path.abspath("./annotation_exporter/annot_export.py"))
+sys.path.insert(0, os.path.abspath("./annotation_exporter/generic.py"))
+sys.path.insert(0, os.path.abspath("./annotation_exporter/main.py"))
 
-print(os.path.abspath("./src"))
+print(os.path.abspath("./annotation_exporter/annot_export.py"))
 
 
 
-import annotation_exporter
+#import annot_exp
 
 # -- General configuration ---------------------------------------------
 
