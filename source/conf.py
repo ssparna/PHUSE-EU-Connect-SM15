@@ -20,11 +20,10 @@
 import os
 import sys
 #sys.path.insert(0, os.path.abspath('.'))
-# print(os.path.abspath("./annotation_exporter/"), r"   vs    C:\Important Data\pdf_proj_github\annotation_exporter")
-# print(os.path.normpath( "C:/Important Data/pdf_proj_github/annotation_exporter") == os.path.abspath("./annotation_exporter"))
+print(__file__)
 sys.path.append(os.path.abspath("."))
 
-#import annotation_exporter
+import annotation_exporter
 
 # -- General configuration ---------------------------------------------
 
