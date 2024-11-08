@@ -20,7 +20,7 @@
 import os
 import sys
 #sys.path.insert(0, os.path.abspath('.'))
-print(__file__)
+#print(__file__)
 sys.path.append(os.path.abspath("."))
 
 import annotation_exporter
