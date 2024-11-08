@@ -25,6 +25,7 @@ import sys
 #print(os.path.abspath("./././"))
 print(os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, "/home/docs/checkouts/readthedocs.org/user_builds/phuse-eu-connect-sm15/checkouts/latest/")
 #sys.path.append(os.path.join(os.path.dirname(__file__), '././')) 
 
 
