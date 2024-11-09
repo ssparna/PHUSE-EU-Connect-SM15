@@ -5,6 +5,6 @@ API
 .. autosummary::
    :toctree: generated
 
-   annot_export
+   annotation_exporter.annot_export
    main
    generic
