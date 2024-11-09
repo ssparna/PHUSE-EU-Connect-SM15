@@ -1,5 +1,5 @@
 ===================
-Module annot_export
+Module annotation_exporter.annot_export
 ===================
 
 
