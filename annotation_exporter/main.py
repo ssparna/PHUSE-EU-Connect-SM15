@@ -21,19 +21,10 @@ def ending_present(string: str, ending: str) -> bool:
     split_str = string.split(".")
     return split_str[-1] == ending
 
-
-def conv_paths(path: str) -> None:
+def run() -> None:
     """
-    replaces all backslashes to prevent accidental escape sequences
-
-    :param path: the path to replace
-    :type path: str
+    runs the gui from the presentation
     """
-    backslash = r"\ "
-    backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
-    path.replace(backslash, "/")
-
-if __name__ == "__main__":
     annotation_exporter: AnnotationExporter = AnnotationExporter()
     sg.theme("DarkGrey5")
     layout: list[list[sg.Element]] = [
@@ -92,3 +83,17 @@ if __name__ == "__main__":
 
 
     window.close()
+
+def conv_paths(path: str) -> None:
+    """
+    replaces all backslashes to prevent accidental escape sequences
+
+    :param path: the path to replace
+    :type path: str
+    """
+    backslash = r"\ "
+    backslash = backslash.split(" ", maxsplit=1)[0] # remove the space after the backslash
+    path.replace(backslash, "/")
+
+if __name__ == "__main__":
+    run()
