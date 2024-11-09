@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.abspath("./annotation_exporter/main.py"))
 
 print(os.path.abspath("./annotation_exporter/annot_export.py"))
 
-
+autodoc_mock_imports = ["annotation_exporter"]
 
 #import annot_exp
 
